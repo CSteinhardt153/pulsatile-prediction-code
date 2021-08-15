@@ -113,7 +113,7 @@ if sim_info.inj_cur(2)
            [adapt_function] = synapse_adapt_5_28_20_f(-adapt_input*1e3,1,sim_info,sim_info.do_orig);%sim_info.scale_sens,1);%use original equation
 %            end
      else
-          adapt_function = zeros(1,length(change_params.I_st)/1e3);
+          adapt_function = zeros(1,round(length(change_params.I_st)/1e3));
      end
     
     

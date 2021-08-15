@@ -11,9 +11,9 @@ function [spiking_info,fr, avg_CV, avg_ISI] = pulse_adapt_expt_indiv(sim_info,cu
 l_pulse= length(pulse_rate);
 l_cur = length(curr_options);
 if do_parallel
-    for n_currents = 1:l_cur
+    parfor n_currents = 1:l_cur
         n_currents
-        parfor n_pulses = 1:l_pulse
+        for n_pulses = 1:l_pulse %parfor
             change_params =struct();
             change_params.neuron.gNa = gNs(1);
             change_params.neuron.gKL = gNs(2);

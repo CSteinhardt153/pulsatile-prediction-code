@@ -279,7 +279,7 @@ if ismember(expt.num,[5])
     
     %If is [] then will build a mod function in the pulse_modulator function
  %   mod_function  = override.firing.mod_f;
-     plot_it = 1;
+     plot_it = 0;
      bin_hlf_wdth = 30;
     if override.rate_mode % Modulating Amplitude (0) Rate = (1)
         curr_options = override.firing.pm_base/-20;
@@ -320,7 +320,6 @@ if ismember(expt.num,[5])
             %[t_dif idx_cntr]=min(abs(bin_times - center_time));
             pr_vect =pulse_per_bin(use_bins);
             fr_vect = fr_per_bin(use_bins);
-            time_vect = bin_times(use_bins);
     else
          mod_function  = override.firing;
         
@@ -333,13 +332,13 @@ if ismember(expt.num,[5])
            use_bins = [use_idx:length(fr_per_bin)];    
         
         bin_center = sim_info.sim_start_time+bin_hlf_wdth+1:2:sim_info.sim_time-bin_hlf_wdth;
-        pr_per_bin = -20*firing.mod_f(round(bin_center*1e3)); % because of current correction
+        pr_per_bin = firing.mod_f(round(bin_center*1e3));
          if plot_it
         figure(5);
         subplot(2,1,1);
        % plot(sim_info.sim_start_time+ [1:1e3*sim_info.sim_time]*1e-3,...
        %     -20*firing.mod_f,'k'); hold on;
-        plot( bin_center , (pr_per_bin -override.curr_options),'k');
+        plot( bin_center , -20*(pr_per_bin -override.curr_options),'k');
         ylabel('dI from Baseline')
         subplot(2,1,2);
         fr =plot(bin_times,fr_per_bin- base_fr,'b'); hold on;       
@@ -347,7 +346,6 @@ if ismember(expt.num,[5])
         xlabel('Time (ms)'); ylabel('Change over Time'); 
         title(sprintf('PAM %s uA [+- %s]',num2str(-20*curr_options),num2str(override.firing.pm_mod_amp)))
          end
-         time_vect = bin_times(use_bins);
          pr_vect =pr_per_bin(use_bins);
          fr_vect = fr_per_bin(use_bins);
       
@@ -364,7 +362,6 @@ if ismember(expt.num,[5])
     end
     sim_pm.fr_vect = fr_vect;
     sim_pm.pr_vect = pr_vect;
-    sim_pm.t_vect = time_vect;
     sim_pm.override =override;
     disp([ sim_pm.mode ' , corr = ', num2str(sim_pm.corr)] );
     output = sim_pm;

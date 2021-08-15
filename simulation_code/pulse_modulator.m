@@ -88,9 +88,12 @@ else
     I_base = curr_options;%*-20; %what pulsatile stimulation tracel looks like
     %mod_depth = .3;
     mod_range_mag = input_mod_f.pm_mod_amp/-20;% [7] %100-200 uA
-    mod_function = (mod_range_mag.*sin(input_mod_f.mod_freq*2*pi*t_full)) + I_base;
-    pulse_times = 1:round((1e3/pr)*1e3):sim_time*1e6;
+    mod_function = [zeros(1, delay*1e-3+sim_info.sim_start_time*1e-3), (mod_range_mag.*sin(input_mod_f.mod_freq*2*pi*t_full)) + I_base];
     
+    pulse_times = round(p_times+delay*1e3+sim_info.sim_start_time*1e3);
+    pulse_times = pulse_times(pulse_times < round(sim_time*1e6));
+    mod_function = mod_function(1:length(pulse_times));
+
     I_st = zeros(1,sim_time/dt);
     for n_ps = 1:length(pulse_times)
         
