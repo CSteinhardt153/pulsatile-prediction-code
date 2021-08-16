@@ -243,22 +243,22 @@ if ismember(expt.num,[3 4])
     if do_parallel 
         output.vis_plots = 0; 
     end
-    save_out = 1;
+    
     gNs = [gNas, gKLs, gKHs];
     tic
     [spiking_info,fr, avg_CV, avg_ISI] = pulse_adapt_expt_indiv(sim_info,curr_options, pulse_rate, output,change_params, tot_reps,do_parallel,expt, gNs);
     toc
+    
+    save_out = 0;
     if save_out
         cd('relev_data')
-%'/Users/cynthiasteinhardt/Dropbox/single-neuron-stim-model/vestibular-neuron-models/vest_model_pulsatile/simpler_format/relev_data/')
+        %'/Users/cynthiasteinhardt/Dropbox/single-neuron-stim-model/vestibular-neuron-models/vest_model_pulsatile/simpler_format/relev_data/')
         cur_dir = '/home/fridmanlab/Steinhardt/Pulsatile_code/sim_irreg_reg'
         save(sprintf('pr_fr_sim_rep%s_I%s-%s_PR%s-%s_S%s_reg%s_sim_wind%s_%s.mat',num2str(tot_reps),num2str(max(curr_options)*-20),num2str(min(curr_options)*-20),...
             num2str(min(pulse_rate)),num2str(max(pulse_rate)),num2str(mean(fr(:,1))),num2str(sim_info.is_reg),num2str(sim_info.sim_time),datestr(now,'mm_dd_yyyy_HH_MM')),...
             'fr','avg_CV','avg_ISI','sim_info','expt','curr_options','pulse_rate')
         cd(cur_dir)
-        %Check pa-fr
-%         figure(20);shadedErrorBar(curr_options*-20,squeeze(mean(fr,3)),squeeze(std(fr,[],3)));
-%         figure(21);shadedErrorBar(pulse_rate,squeeze(mean(fr,3)),squeeze(std(fr,[],3)));
+        
     end
    
 end
@@ -278,98 +278,119 @@ end
 if ismember(expt.num,[5])
     
     %If is [] then will build a mod function in the pulse_modulator function
- %   mod_function  = override.firing.mod_f;
-     plot_it = 1;
-     bin_hlf_wdth = 30;
+    %   mod_function  = override.firing.mod_f;
+    plot_it = 0;
+    bin_hlf_wdth = 30;
     if override.rate_mode % Modulating Amplitude (0) Rate = (1)
-        curr_options = override.firing.pm_base/-20;
+        curr_options = override.firing.pa_base/-20;
         %Set around the input current (for testing likely 150 uA (midrange one bend)
         %linspace(80,250,10)/-20;%[20 90 100 110 120 150 200 225]/-20; %-10;
         
-            [firing sim_info] = pulse_modulator(sim_info,override.firing,curr_options, change_params, tot_reps, output,override.rate_mode)
-            %Plot Firing Rate Over Time
-            
-            [fr_per_bin bin_times] = moving_avg_fr(sim_info,  firing.rep.times, bin_hlf_wdth, []);
-            base_fr = mean(fr_per_bin(1:9));
-            
-            [pulse_per_bin bin_times] = moving_avg_fr(sim_info,  firing.rep.pulse_times*1e-3, bin_hlf_wdth,[]);
-         
-            
-            [a use_idx]=min(abs(bin_times - 550));
-            use_bins = [use_idx:length(pulse_per_bin)];
-            if plot_it
-            figure(100);
-            subplot(3,1,1);plot(firing.fin_t*1e3,firing.fin_m); hold on; ylabel('Head Velocity');
-            xlim([0 sim_info.sim_time]); %ylim([0 300])
-            subplot(3,1,2:3);
-            plot(bin_times(use_bins),pulse_per_bin(use_bins)); hold on;
-             xlabel('Time (ms)'); ylabel('Pulse Rate (sps)')
-             xlim([0 sim_info.sim_time]); hold on; ylim([0 300])
-           % subplot(3,1,3);
-            plot(bin_times(use_bins),fr_per_bin(use_bins)); hold on;
-            xlabel('Time (ms)'); ylabel('Firing Rate (sps)')
-            xlim([0 sim_info.sim_time]); hold on; ylim([0 300])
-            
-            title(sprintf('PRM %s pps [+- %s]',num2str(override.firing.pm_base),num2str(override.firing.pm_mod_amp)))
-            end
-               
-            center_time = (1e3/firing.mod_freq) + sim_info.sim_start_time; %ms
-            %Start with baseline firing rate = baseline pulse rate:
-            
-            %base_pr = mean(pulse_per_bin(1:9));
-            %[t_dif idx_cntr]=min(abs(bin_times - center_time));
-            pr_vect =pulse_per_bin(use_bins);
-            fr_vect = fr_per_bin(use_bins);
-            time_vect = bin_times(use_bins);
+        [firing sim_info] = pulse_modulator(sim_info,override.firing,curr_options, change_params, tot_reps, output,override.rate_mode)
+        %Plot Firing Rate Over Time
     else
-         mod_function  = override.firing;
+        mod_function  = override.firing;
         
         [firing sim_info] = pulse_modulator(sim_info,mod_function,curr_options(1), change_params, tot_reps, output,override.rate_mode)
-        %Plot Firing Rate Over Time
-     
-        [fr_per_bin bin_times] = moving_avg_fr(sim_info,  firing.rep.times,bin_hlf_wdth,[]); hold on;
-        base_fr = mean(fr_per_bin(1:9));
-        [a use_idx]=min(abs(bin_times - 550));
-           use_bins = [use_idx:length(fr_per_bin)];    
-        
-        bin_center = sim_info.sim_start_time+bin_hlf_wdth+1:2:sim_info.sim_time-bin_hlf_wdth;
-        pr_per_bin = -20*firing.mod_f(round(bin_center*1e3)); % because of current correction
-         if plot_it
-        figure(5);
-        subplot(2,1,1);
-       % plot(sim_info.sim_start_time+ [1:1e3*sim_info.sim_time]*1e-3,...
-       %     -20*firing.mod_f,'k'); hold on;
-        plot( bin_center , (pr_per_bin -override.curr_options),'k');
-        ylabel('dI from Baseline')
-        subplot(2,1,2);
-        fr =plot(bin_times,fr_per_bin- base_fr,'b'); hold on;       
-        legend([ fr],{"Firing Rate"});        
-        xlabel('Time (ms)'); ylabel('Change over Time'); 
-        title(sprintf('PAM %s uA [+- %s]',num2str(-20*curr_options),num2str(override.firing.pm_mod_amp)))
-         end
-         time_vect = bin_times(use_bins);
-         pr_vect =pr_per_bin(use_bins);
-         fr_vect = fr_per_bin(use_bins);
-      
     end
+    
+    [fr_per_bin bin_times] = moving_avg_fr(sim_info,  firing.rep.times, bin_hlf_wdth, []);
+    base_fr = mean(fr_per_bin(1:9));
+    
+    [pulse_per_bin bin_times] = moving_avg_fr(sim_info,  firing.rep.pulse_times*1e-3, bin_hlf_wdth,[]);
+    
+    offset = firing.delay + sim_info.sim_start_time;
+    [a use_idx]=min(abs(bin_times - offset));
+    use_bins = [use_idx:length(pulse_per_bin)];
+    if plot_it
+        if override.rate_mode
+            figure(100);
+        else
+            figure(101);
+        end
+        ax1= subplot(3,1,1);plot(firing.mod_timing(round(bin_times(use_bins)*1e3))*1e3,...
+            firing.mod_f(round(bin_times(use_bins)*1e3)),'k.--'); hold on; ylabel('Head Velocity');
+        xlim([0 sim_info.sim_time]); %ylim([0 300])
+        ax2=subplot(3,1,2:3);
+        
+        plot(bin_times(use_bins),pulse_per_bin(use_bins),'r'); hold on;
+        xlabel('Time (ms)'); ylabel('Pulse Rate (sps)')
+        xlim([0 sim_info.sim_time]); hold on; ylim([0 300])
+        % subplot(3,1,3);
+        plot(bin_times(use_bins),fr_per_bin(use_bins),'b'); hold on;
+        xlabel('Time (ms)'); ylabel('Firing Rate (sps)')
+        xlim([0 sim_info.sim_time]); hold on; ylim([0 300])
+        legend('pr','fr')
+        if override.rate_mode
+            title(sprintf('PRM %s pps [+- %s]',num2str(override.firing.pm_base),num2str(override.firing.pm_mod_amp)))
+        else
+            
+            title(sprintf('PAM %s uA [+- %s]',num2str(-20*curr_options),num2str(override.firing.pm_mod_amp)))
+            
+        end
+        linkaxes([ax1 ax2],'x')
+    end
+    
+    %center_time = (1e3/firing.mod_freq) + sim_info.sim_start_time; %ms
+    %Start with baseline firing rate = baseline pulse rate:
+    
+    %base_pr = mean(pulse_per_bin(1:9));
+    %[t_dif idx_cntr]=min(abs(bin_times - center_time));
+    pr_vect =pulse_per_bin(use_bins);
+    fr_vect = fr_per_bin(use_bins);
+    time_vect = bin_times(use_bins);
+    mod_vect = firing.mod_f(round(bin_times(use_bins)*1e3));
     
     %Error  comparisions:
     [corr_val p_val]=corr((pr_vect)', fr_vect');
-    sim_pm.corr = corr_val;
+    [corr_val_modf p_val]=corr((mod_vect)', fr_vect');
+    sim_pm.corr_pr = corr_val;
+    sim_pm.corr_mdf = corr_val_modf;
     sim_pm.pval = p_val;
     if override.rate_mode
-    sim_pm.mode= 'prm'; 
+        sim_pm.mode= 'prm';
     else
-        sim_pm.mode= 'pam'; 
+        sim_pm.mode= 'pam';
     end
     sim_pm.fr_vect = fr_vect;
     sim_pm.pr_vect = pr_vect;
+    sim_pm.mod_vect = mod_vect;
     sim_pm.t_vect = time_vect;
     sim_pm.override =override;
-    disp([ sim_pm.mode ' , corr = ', num2str(sim_pm.corr)] );
+    disp([ sim_pm.mode ' , corr = ', num2str(sim_pm.corr_mdf)] );
     output = sim_pm;
 end
 toc
+
+
+if ismember(expt.num,[6])
+    rng(2)
+    do_parallel = 1; % fast run and save out data
+    if do_parallel 
+        output.vis_plots = 0; 
+    end
+    
+    gNs = [gNas, gKLs, gKHs];
+    tic
+    [spiking_info,fr, avg_CV, avg_ISI] = pulse_adapt_expt_indiv(sim_info,curr_options, pulse_rate, output,change_params, tot_reps,do_parallel,expt, gNs);
+    toc
+    
+    %Check pa-fr
+    if length(curr_options) > length(pulse_rate)
+    %figure;
+    shadedErrorBar(curr_options*-20,squeeze(mean(fr,3)),squeeze(std(fr,[],3)));
+    xlabel('uA'); ylabel('sps');
+    title(['PR = ' num2str(pulse_rate)]);
+    else
+    %figure;
+    shadedErrorBar(pulse_rate,squeeze(mean(fr,3)),squeeze(std(fr,[],3)));
+     xlabel('pps'); ylabel('sps');
+     title(['PA = ' num2str(curr_options*-20)]);
+    end
+
+    
+   
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -484,9 +505,9 @@ function [fr_per_bin bin_center] = moving_avg_fr(sim_info,spike_times,bin_hlf_wd
        sim_time = sim_info.sim_time;
    end
    if isempty(bin_hlf_wdth)
-    bin_hlf_wdth = 40;%70%40;%65;
+    bin_hlf_wdth = 30;%70%40;%65;
    end
-    bin_center = sim_info.sim_start_time+bin_hlf_wdth+1:2:sim_time-bin_hlf_wdth;
+    bin_center = sim_info.sim_start_time+bin_hlf_wdth+1:5:sim_time-bin_hlf_wdth;
    % bin_center = bin_hlf_wdth+1:2:sim_info.sim_time-bin_hlf_wdth;
 
     for n = 1:length(bin_center)

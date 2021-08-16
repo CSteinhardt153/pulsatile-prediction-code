@@ -850,25 +850,6 @@ box off;
 xlabel('Window Length (ms)');  ylabel('Difference (%)')
 set(gca,'fontsize',14);
 %% Initial pulse rate/amplitude modulation experiments: 5/31/21
-expt.num = [5]; 
-run_mode = 'override';%  {'exact','override'}; %can run the exact experiment from study, override some parameters, or do a new experiment
-%%% If choose override skip to line 109 to edit otherwise select experiment
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%Deciding what outputs to visualize:
-output.vis_plots = 0; %If want to see the afferent model APs without experiments
-output.vis_plot_num = 6; %plot number when visualizing
-output.label_aps = 0; %This is meaningless if don't set the seed, etc. - for check if AP spont or pulse induced
-output.all_spk = 0;
-output.do_phase_plane_anal = 0;
-output.demo_pulse_mod = 0;
-inj_cur = [1 1];
-pulse_rate = [30];%30:10:70;
-curr_options = -5.5;%linspace(0,-18,31);%0;%horzcat(linspace(0,-18,31), linspace(-18.15,-20,14));
-[override] = set_overrides_v2(run_mode,output,{'pulse_rate',pulse_rate },...
-    {'curr_options',curr_options},{'mu_IPT',1},{'inj_cur',inj_cur},{'is_reg',0},{'do_jitter',0},{'tot_reps',1},{'sim_start_time',150},{'epsc_scale',1});
-disp([ override.gNas override.gKHs override.gKLs override.sim_info.mu_IPT])
-run_chosen_expt(expt,run_mode,override,output);
 
 %% High Rate
 expt.num = []; 
@@ -1045,10 +1026,14 @@ legend( leg_nums)
 %%%%%%%%%%%%%%
 
 %% Plot predicted current-pulse relationship:
-expt.num = [3]; 
+%Fig 5 right plots
+expt.num = [6]; 
 run_mode = 'override';%  {'exact','override'}; %can run the exact experiment from study, override some parameters, or do a new experiment
 %%% If choose override skip to line 109 to edit otherwise select experiment
-
+%Two example experiment: for PAM:   60+-20 uA 250 pps see somewhat linear
+%increase( fig 2)
+%PRM consistently linear until linear: 60 +-20 pps 
+%both predictible inconsisntetly 150 uA 150 pps +-50 and vice versa
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Deciding what outputs to visualize:
 output.vis_plots = 0; %If want to see the afferent model APs without experiments
@@ -1058,50 +1043,47 @@ output.all_spk = 0;
 output.do_phase_plane_anal = 0;
 output.demo_pulse_mod = 0;
 inj_cur = [1 1];
+
+n_steps = 6;
+%PAM
 pulse_rate = 150;
-curr_options = [100:5:200]/-20;%150 uA baseline/ fixed point for PRM/PAM
+curr_options = linspace(100,200,n_steps)/-20;%150 uA baseline/ fixed point for PRM/PAM
 [override] = set_overrides_v2(run_mode,output,{'pulse_rate',pulse_rate },...
     {'curr_options',curr_options},{'mu_IPT',1.5},{'inj_cur',inj_cur},{'is_reg',0},{'do_jitter',0},...
-    {'tot_reps',5},{'sim_start_time',150},{'epsc_scale',1},{'sim_time',1150});
-% [override] = set_overrides_v2(run_mode,output,{'pulse_rate',pulse_rate },...
-%     {'curr_options',curr_options},{'mu_IPT',.02},{'inj_cur',inj_cur},{'is_reg',1},{'do_jitter',0},...
-%     {'tot_reps',1},{'sim_start_time',150},{'epsc_scale',.008},{'sim_time',2000});
-disp([ override.gNas override.gKHs override.gKLs override.sim_info.mu_IPT])
-override.rate_mode = 1; % 1 = rate mode, 0 = amplitude mode
-override.rate_mode = 0; % 1 = rate mode, 0 = amplitude mode
+    {'tot_reps',10},{'sim_start_time',150},{'epsc_scale',1},{'sim_time',1150});
 
+disp([ override.gNas override.gKHs override.gKLs override.sim_info.mu_IPT])
+
+figure(30); subplot(2,2,1);
 run_chosen_expt(expt,run_mode,override,output);
 
-%%
-f_max = 350;
-f_baseline = 100;
-C = 5;% iregular 2 - regular?
-HV_i = -450:450%[0:4095];%0-2048-4095 = [-450, 0, +450]
-A = atanh(2*f_baseline./f_max -1);
-HV_t_pr = @(HV_i) 0.5*f_max.*(1+tanh(A+C*((HV_i + 450)/450 - 1)));
+pulse_rate = [250];
+curr_options = linspace(40,80,n_steps)/-20;%150 uA baseline/ fixed point for PRM/PAM
+[override] = set_overrides_v2(run_mode,output,{'pulse_rate',pulse_rate },...
+    {'curr_options',curr_options},{'mu_IPT',1.5},{'inj_cur',inj_cur},{'is_reg',0},{'do_jitter',0},...
+    {'tot_reps',10},{'sim_start_time',150},{'epsc_scale',1},{'sim_time',1150});
 
-%Replicating Sadeghi Minor Cullen 2007, Fig. 2
-dt = 1e-6; %s
-sim_time = 3;% round(2+sim_info.sim_start_time*1e-3); %s
-sim_info.sim_time = sim_time/1e-3;
-t_full = 0:dt:sim_time-dt; %s
+subplot(2,2,2);
+run_chosen_expt(expt,run_mode,override,output);
 
-firing.mod_freq = 2;% Hz
-firing.pm_mod_amp = 50; %50 pps/50uA
-firing.pm_base = 150;% pps/uA
-firing.sim_time = sim_time;
-%firing.mod_f = HV_sin;%HV_t_pr(HV_sin);
-firing.mod_timing = t_full;
-   
-    
-% 
-% The head velocity to the pulse rates over time:
-% figure(1);subplot(2,1,1);
-% plot(t_full,HV_sin); ylabel('degrees/s');title(' Head Velocity'); box off
-% subplot(2,1,2);plot(t_full,HV_t_pr(HV_sin)); box off;
-% ylabel('pps'); title('Pulse Rate')
-% xlabel('Time (s)')
+%PRM
+pulse_rate = linspace(100,200,n_steps);
+curr_options = 150/-20;%150 uA baseline/ fixed point for PRM/PAM
+[override] = set_overrides_v2(run_mode,output,{'pulse_rate',pulse_rate },...
+    {'curr_options',curr_options},{'mu_IPT',1.5},{'inj_cur',inj_cur},{'is_reg',0},{'do_jitter',0},...
+    {'tot_reps',10},{'sim_start_time',150},{'epsc_scale',1},{'sim_time',1150});
+subplot(2,2,3);
+run_chosen_expt(expt,run_mode,override,output);
 
+pulse_rate = linspace(60,160,n_steps);
+curr_options = 150/-20;%150 uA baseline/ fixed point for PRM/PAM
+[override] = set_overrides_v2(run_mode,output,{'pulse_rate',pulse_rate },...
+    {'curr_options',curr_options},{'mu_IPT',1.5},{'inj_cur',inj_cur},{'is_reg',0},{'do_jitter',0},...
+    {'tot_reps',10},{'sim_start_time',150},{'epsc_scale',1},{'sim_time',1150});
+subplot(2,2,4);
+run_chosen_expt(expt,run_mode,override,output);
+%% PRM/PAM Experiments with diff frequency modulation:
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 expt.num = [5]; 
 run_mode = 'override';%  {'exact','override'}; %can run the exact experiment from study, override some parameters, or do a new experiment
 %%% If choose override skip to line 109 to edit otherwise select experiment
@@ -1116,57 +1098,52 @@ output.all_spk = 0;
 output.do_phase_plane_anal = 0;
 output.demo_pulse_mod = 0;
 inj_cur = [1 1];
-%%
-pulse_rate = 0;%[30];%30:10:70;
-curr_options = [-7.5];%150 uA baseline/ fixed point for PRM/PAM
-[override] = set_overrides_v2(run_mode,output,{'pulse_rate',pulse_rate },...
-    {'curr_options',curr_options},{'mu_IPT',1.5},{'inj_cur',inj_cur},{'is_reg',0},{'do_jitter',0},...
-    {'tot_reps',1},{'sim_start_time',150},{'epsc_scale',1},{'sim_time',4000});
-% [override] = set_overrides_v2(run_mode,output,{'pulse_rate',pulse_rate },...
-%     {'curr_options',curr_options},{'mu_IPT',.02},{'inj_cur',inj_cur},{'is_reg',1},{'do_jitter',0},...
-%     {'tot_reps',1},{'sim_start_time',150},{'epsc_scale',.008},{'sim_time',2000});
-disp([ override.gNas override.gKHs override.gKLs override.sim_info.mu_IPT])
-override.rate_mode = 1; % 1 = rate mode, 0 = amplitude mode
-override.rate_mode = 0; % 1 = rate mode, 0 = amplitude mode
 
-firing.mod_f = firing.pm_mod_amp*sin(mod_freq*2*pi*t_full)+firing.pm_base;
-
-override.firing = firing;
-override.sim_info.sim_time = override.firing.sim_time*1e3;
-run_chosen_expt(expt,run_mode,override,output);
-
-%%
 dt = 1e-6; %s
-clear sim_fr sim_pr sim_corrs
-freq_tests= [.1 .5 1 2 4];% 8 16 32 64 81 100];
+clear sim_fr sim_pr sim_corrs sim_ts sim_mod sim_corr_prs
+freq_plot = 1;
+freq_tests= [.25 .5 1 2 4 8 16 32 64 81 100];
 l_freq = length(freq_tests);
 %n_reps = 1; % example
 
+%Combinations from above:
+n_ms = [2 2 1 1];
+pr_cent  = [150 250 150 110];
+pa_cent = [150 60 150 150];
+mod_d = [50 20 50 50];
+%prs = [150 250 100:200 50:90];
+%pas = [100:200 40:80 150 150];
+
+
 %Choose to do 150 +-50 for each and 120 +- 50 to show two diff extremes bot
 %hexplainable w/ 1 second loops
-for n_reps = 1:5 
-
-
-for n_modes = 1:2
- tic  
-for n_freq = 3:5%1:l_freq 
-firing = struct();
-firing.pm_mod_amp = 50; %50 pps/50uA
-firing.pm_base = 120;%150% 110;% pps/uA
-firing.sim_time = 4%10;
+for n_combos = 1:length(n_ms)
+    firing = struct();
+    n_modes = n_ms(n_combos);
+firing.pm_mod_amp = mod_d(n_combos); %50 pps/50uA - modulation of whatever
+firing.pr_base = pr_cent(n_combos);%pps
+firing.pa_base = pa_cent(n_combos);%uA
+if n_modes == 2
+    firing.pm_base = firing.pa_base;
+else
+     firing.pm_base = firing.pr_base;
+end
+for n_freq = 1:length(freq_tests)
+firing.sim_time = 4;%10;
 t_full = 0:dt:firing.sim_time-dt; %s
 %firing.mod_f = HV_sin;%HV_t_pr(HV_sin);
 firing.mod_timing = t_full;
-    firing.mod_freq = freq_tests(n_freq);% Hz
+    firing.mod_freq = 2;% Hz
 
 inj_cur = [1 1];
-pulse_rate = 0;
-curr_options = [-7.5];%150 uA baseline/ fixed point for PRM/PAM
+pulse_rate = firing.pr_base;
+curr_options = firing.pa_base/-20;%uA baseline/ fixed point for PRM/PAM
 [override] = set_overrides_v2(run_mode,output,{'pulse_rate',pulse_rate },...
     {'curr_options',curr_options},{'mu_IPT',1.5},{'inj_cur',inj_cur},{'is_reg',0},{'do_jitter',0},...
     {'tot_reps',1},{'sim_start_time',150},{'epsc_scale',1},{'sim_time',firing.sim_time*1e3});
 
 firing.mod_f = firing.pm_mod_amp*sin(firing.mod_freq*2*pi*t_full)+firing.pm_base;
+
 override.firing = firing;
 override.sim_info.sim_time = override.firing.sim_time*1e3;
 if (n_modes ==1)
@@ -1174,54 +1151,65 @@ if (n_modes ==1)
 else
     override.rate_mode = 0;
 end
-disp([override.rate_mode firing.mod_freq override.gNas override.gKHs override.gKLs override.sim_info.mu_IPT ])
-
+disp(sprintf('PRM:%s,Freq:%s,EPSC rate(ms):%s',num2str(override.rate_mode), ...
+    num2str(firing.mod_freq), num2str(override.sim_info.mu_IPT)));
+for n_reps = 1:10
 out = run_chosen_expt(expt,run_mode,override,output);
-sim_corrs(n_modes,n_freq,n_reps) = out.corr;
-sim_fr(n_modes,n_freq,n_reps,:) = out.fr_vect;
-sim_pr(n_modes,n_freq,n_reps,:) = out.pr_vect;
-sim_ts(n_modes,n_freq,:) = out.t_vect;
+sim_corrs(n_combos,n_reps,n_freq,:) = out.corr_mdf;
+sim_corr_prs(n_combos,n_reps,n_freq,:) = out.corr_pr;
+sim_fr(n_combos,n_reps,n_freq,:) = out.fr_vect;
+sim_mod(n_combos,n_reps,n_freq,:) = out.mod_vect;
+sim_pr(n_combos,n_reps,n_freq,:) = out.pr_vect;
+sim_ts(n_combos,n_reps,n_freq,:) = out.t_vect;
 end
-toc
 end
+end
+
+freq_use_idx = 3;
+use_mod = squeeze(sim_mod(:,:,freq_use_idx,:));
+use_fr = squeeze(sim_fr(:,:,freq_use_idx,:));
+use_t = squeeze(sim_ts(:,:,freq_use_idx,:));
+
+%Plot single example of each
+for n = 1:4
+figure(1);subplot(2,2,n)
+  plot(squeeze(use_t( n,1,:)),...
+   (squeeze(mean(use_mod( n,:,:),2))- mean(use_mod(n,:))),'k'); hold on;%/max( (squeeze(sim_mod(1,n_freq,1,:))- firing.pm_base))
+if n_ms(n) == 2
+shadedErrorBar(squeeze(use_t(n,1,:)),...
+    (squeeze(mean(use_fr( n,:,:),2))- mean(use_fr(n,:))), squeeze(std(use_fr( n,:,:),[],2)),'lineProps',{'b-'});
+else
+    shadedErrorBar(squeeze(use_t(n,1,:)),...
+    (squeeze(mean(use_fr( n,:,:),2))- mean(use_fr(n,:))), squeeze(std(use_fr( n,:,:),[],2)),'lineProps',{'r-'});
+end
+xlim([1000 2000]);
+xlabel('Time (ms)'); ylabel('dsps')
+
+% Plot the frequency response:
+figure(2);
+subplot(2,2,n)
+shadedErrorBar(freq_tests,(squeeze(mean(sim_corrs(n,:,:),2))),(squeeze(std(sim_corrs(n,:,:),[],2))),'lineProps',{'k-'})
+%/max(squeeze(mean(sim_fr(1,:,:,:),3))-  mean(sim_fr(:))),
+%squeeze(std(sim_fr(1,:,:,:),[],3));
+xlabel('Freq (Hz)'); ylabel('Corr ')
 end
 %%
 
-% Second correcation for prm to intended input not delivered pulse shape:
-
-for n_freq = 3:size(sim_pr,2)
-    for n_rep = 1:size(sim_pr,3)
-        fr_vect = squeeze(sim_fr(1,n_freq,n_rep,:) - mean(sim_fr(1,n_freq,n_rep,:))) ;
-        mod_vect = squeeze(sim_pr(2,n_freq,n_rep,:))-firing.pm_base;
-        
-        [corr_val p_val]=corr((mod_vect), fr_vect);
-        corrs_2(n_freq,n_rep) = corr_val;
-        400+150 %sim start time
-        figure(3);
-        subplot(2,1,1); plot(squeeze(sim_ts(1,n_freq,:)),fr_vect); hold on; plot(mod_vect,'k');
-        subplot(2,1,2);
-        
-    end
-    errorbar(freq_tests(n_freq),(mean(corrs_2(n_freq,:),2)),(std(corrs_2(n_freq,:),[],2)),'r.');%,'lineProps',{'k.-','markersize',20});
-        pause;
-        subplot(2,1,1);cla
-end
 
 
 %%
 %Plot results:
 
 for n = 1:length(freq_tests)
-pr_prm_n =squeeze(sim_pr(1,n,:,:)); 
-pr_pam_n =squeeze(sim_pr(2,n,:,:)); 
+
 prm_n =squeeze(sim_fr(1,n,:,:));
 pam_n =squeeze(sim_fr(2,n,:,:));
 figure(21);
 %suptitle('PRM')
 subplot(4,3,n);
  
-shadedErrorBar(1:size(prm_n,2),mean(pr_prm_n,1)-mean(pr_prm_n(:)),std(pr_prm_n,[],1),'lineProps',{'k-'}); hold on;
-shadedErrorBar(1:size(prm_n,2),(mean(prm_n,1) - mean(prm_n(:))),std(prm_n,[],1),'lineProps',{'r-'}); hold on;
+shadedErrorBar(sim_ts(1,n,:),mean(pr_prm_n,1)-mean(pr_prm_n(:)),std(pr_prm_n,[],1),'lineProps',{'k-'}); hold on;
+shadedErrorBar(sim_ts(1,n,:),(mean(prm_n,1) - mean(prm_n(:))),std(prm_n,[],1),'lineProps',{'r-'}); hold on;
 prm_corr(n) = corr(mean(prm_n,1)',mean(pr_prm_n,1)');
 %/max(mean(prm_n,1) - mean(prm_n(:)))
 if (n > 1)
@@ -1232,8 +1220,8 @@ title(['PRM ' num2str(freq_tests(n))]);
  figure(22);
 subplot(4,3,n);
 %suptitle('PAM')
-shadedErrorBar(1:size(pam_n,2),mean(pr_pam_n,1)-mean(pr_pam_n(:)),std(pr_pam_n,[],1),'lineProps',{'k-'}); hold on;
-shadedErrorBar(1:size(pam_n,2),(mean(pam_n,1) - mean(pam_n(:))),std(pam_n,[],1),'lineProps',{'b-'}); hold on;
+shadedErrorBar(sim_ts(2,n,:),mean(pr_pam_n,1)-mean(pr_pam_n(:)),std(pr_pam_n,[],1),'lineProps',{'k-'}); hold on;
+shadedErrorBar(sim_ts(2,n,:),(mean(pam_n,1) - mean(pam_n(:))),std(pam_n,[],1),'lineProps',{'b-'}); hold on;
 %/max((mean(pam_n,1) - mean(pam_n(:))))
 pam_corr(n) = corr(mean(pam_n,1)',mean(pr_pam_n,1)');
 title(['PAM ' num2str(freq_tests(n))]);

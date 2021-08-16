@@ -36,15 +36,17 @@ else
     mod_amp = input_mod_f.pm_mod_amp;
     sim_time = input_mod_f.sim_time;
     mod_function = input_mod_f.mod_f;
+    mod_freq = input_mod_f.mod_freq;
     t_full = input_mod_f.mod_timing;
     firing = input_mod_f;
     delay = 400; %ms
     pulse_height = curr_options;
+    firing.delay = delay;
 end
 
 
-update_freq= 5*1e-3;%s%10*1e-3;%s
-smple_freq = update_freq/dt;
+update_freq= 2e-3;%s%10*1e-3;%s (5 ms) %round(mod_freq/500,3)
+smple_freq = ceil(update_freq/dt);
 
 %Make Pulse over Time
 stim_interv = 150;%uS (from Mitchell)
@@ -62,13 +64,14 @@ if rate_mode
     end
     if plot_steps
         figure(2);
-        subplot(2,1,1);plot(t_full+delay*1e-3+sim_info.sim_start_time*1e-3, mod_function); xlim([0 sim_time])
-        subplot(2,1,2); plot(dt*(1:length(I_st)),I_st); xlabel('Time (s)'); ylabel('I_{inj}');
+        ax1 = subplot(2,1,1);plot(t_full+delay*1e-3+sim_info.sim_start_time*1e-3, mod_function); xlim([0 sim_time])
+        ax2= subplot(2,1,2); plot(dt*(1:length(I_st)),I_st); xlabel('Time (s)'); ylabel('I_{inj}');
         xlim([0 sim_time])
+        linkaxes([ax1 ax2],'x')
     end
+ 
     
-    firing.fin_t = t_full+delay*1e-3+sim_info.sim_start_time*1e-3;
-    firing.fin_m = mod_function;
+    firing.mod_f = [zeros(1,1e3*(sim_info.sim_start_time+delay)) mod_function(1:end-1e3*(delay+sim_info.sim_start_time))];
     %Variables for Simulation
     
     change_params.I_st = I_st;
@@ -84,15 +87,16 @@ if rate_mode
     
 else
     %Amplitude Modulation:
-    pr = firing.pm_base; %pps
+    pr = firing.pr_base; %pps
     I_base = curr_options;%*-20; %what pulsatile stimulation tracel looks like
     %mod_depth = .3;
     mod_range_mag = input_mod_f.pm_mod_amp/-20;% [7] %100-200 uA
-    mod_function = [zeros(1, delay*1e-3+sim_info.sim_start_time*1e-3), (mod_range_mag.*sin(input_mod_f.mod_freq*2*pi*t_full)) + I_base];
+    mod_function = [zeros(1, 1e3*(delay+sim_info.sim_start_time)), (mod_range_mag.*sin(input_mod_f.mod_freq*2*pi*t_full)) + I_base];
     
-    pulse_times = round(p_times+delay*1e3+sim_info.sim_start_time*1e3);
+    p_times = 0:(1e6/pr):sim_info.sim_time*1e3;
+    pulse_times = round(p_times+1e3*(delay+sim_info.sim_start_time));
     pulse_times = pulse_times(pulse_times < round(sim_time*1e6));
-    mod_function = mod_function(1:length(pulse_times));
+    mod_function = mod_function(1:round(1e3*sim_info.sim_time));
 
     I_st = zeros(1,sim_time/dt);
     for n_ps = 1:length(pulse_times)
@@ -100,7 +104,7 @@ else
         I_st([round([pulse_times(n_ps):pulse_times(n_ps)+stim_interv-1])]) = mod_function(pulse_times(n_ps));
         I_st([round([(pulse_times(n_ps)+stim_interv):(pulse_times(n_ps)+2*stim_interv-1)])]) =  -mod_function(pulse_times(n_ps));
     end
-    firing.mod_f = mod_function;
+    firing.mod_f = mod_function*-20;
     
     change_params.I_st = I_st;
     change_params.I_base= I_base;
@@ -111,8 +115,12 @@ else
         %%%   rng(rep_num); - if want to try setting seed and comparing
         [spiking_info] =  run_expt_on_axon_10_10_20_f(sim_info,output,change_params)
         firing.rep(rep_num).times = spiking_info.end.spk_times;
+        firing.rep(rep_num).pulse_times = pulse_times;
     end
 end
+
+%%% Check outputs make sense:
+%figure(1);plot(firing.mod_timing,firing.mod_f); % bote -7.5 (cathodic leading)*-20 --> 150 uA
 
 end
 
