@@ -17,7 +17,7 @@
 clear;
 
 plot_outputs = 1; % Plot the final fittings/ spike sorting
-plot_steps = 0; % Plot the intermediates (kaiser threshold, etc. good for fitting new data)
+plot_steps = 1; % Plot the intermediates (kaiser threshold, etc. good for fitting new data)
 
 
 data_dir = '/Users/cynthiasteinhardt/Dropbox/Fridman_lab/submissions/pulsatile/diana_raw_data_reanalysis_7_26_21';
@@ -29,7 +29,7 @@ file_names = dir('rawdata_aff*.mat');
 aff_sort_setting = [1, 2.5e5, 3.5e5, 80;
              7, 1e3, 2e3, 120];
 
-for n_dat_fs = 1:length(file_names)
+for n_dat_fs = 2:length(file_names)
 disp(sprintf('Starting new afferent: %s', file_names(n_dat_fs).name ))
 aff_dat = load(file_names(n_dat_fs).name);
 stim_trace = aff_dat.stim;
@@ -54,9 +54,6 @@ if plot_steps
 end
 
 cur_timing = aff_dat.t;
-if min(unique(diff(cur_timing))) > 1e-4
-    cur_timing = aff_dat.t*1e-3;
-end
 
 info_row = find(aff_sort_setting(:,1) == aff_num);
 k_thresh_min_max = aff_sort_setting(info_row,2:3);
@@ -67,6 +64,7 @@ pulse_art_wind = aff_sort_setting(info_row,4);
 spike_info = find_AP_times(cur_timing,raw_spiking,stim_trace, ...
     k_thresh_min_max,pulse_art_wind,32,plot_steps)
 
+end
 
 %Sorted spikes here:
 figure(12);
@@ -74,14 +72,85 @@ plot(cur_timing, raw_spiking,'k'); hold on;
 plot(cur_timing(spike_info.pulse_evoked_spk_idxs),raw_spiking(spike_info.pulse_evoked_spk_idxs),'m.');
 plot(cur_timing(spike_info.spont_spk_idxs),raw_spiking(spike_info.spont_spk_idxs),'g.');
 
-% Check induced firing rate:
-%
-%%
-[avg_frs, pr_info, spont_win, time_ds] = sort_spk_to_pfr(spike_info,cur_timing)
+%% Check induced firing rate:
+%Turn sorted spikes in
+new_block_cutoff = 1e4;
+pulse_blck_breaks = find(diff(spike_info.pulses_tot) > new_block_cutoff);
+
+clear pulse_regions
+pulse_regions(1,:) = [spike_info.pulses_tot(1) spike_info.pulses_tot(pulse_blck_breaks(1))];
+for n_p_reg= 1:length(pulse_blck_breaks)-1
+    [pulse_blck_breaks(n_p_reg)+1 pulse_blck_breaks(n_p_reg+1)]
+    pulse_regions(n_p_reg+1,:) = [spike_info.pulses_tot(pulse_blck_breaks(n_p_reg)+1) spike_info.pulses_tot(pulse_blck_breaks(n_p_reg+1))];
+end
+pulse_regions(n_p_reg+2,:) = [spike_info.pulses_tot(pulse_blck_breaks(end)+1) spike_info.pulses_tot(end)];
 
 %Correct pulse blocks:
-figure;
+figure(11);
 plot(cur_timing, raw_spiking,'k'); hold on;
+
+if do_aff_1
+    time_diffs=( (cur_timing(pulse_regions(:,2)) - cur_timing(pulse_regions(:,1)))); %ms --> s
+else
+    time_diffs=( (cur_timing(pulse_regions(:,2)) - cur_timing(pulse_regions(:,1))))*1e-3; %ms --> s
+end
+use_winds = (time_diffs ~= 0);
+
+for n_p_reg= 1:size(pulse_regions,1)
+    if ismember(n_p_reg,find(use_winds))
+        plot(cur_timing(pulse_regions(n_p_reg,1)),ones(size(pulse_blck_breaks)),'ro')
+        plot(cur_timing(pulse_regions(n_p_reg,2)),ones(size(pulse_blck_breaks)),'r*')
+    end
+end
+
+
+%%
+%Num pulses per block:
+clear n_pulses pulsespk spontspk spont_winds
+for n_p_blcks = 1:size(pulse_regions,1)
+    n_pulses(n_p_blcks) = sum((spike_info.pulses_tot < pulse_regions(n_p_blcks,2)) & ...
+        (spike_info.pulses_tot > pulse_regions(n_p_blcks,1)));
+    pulsespk(n_p_blcks) = sum((spike_info.pulse_evoked_spk_idxs < pulse_regions(n_p_blcks,2)) & ...
+        (spike_info.pulse_evoked_spk_idxs > pulse_regions(n_p_blcks,1)));
+    spontspk(n_p_blcks) = sum((spike_info.spont_spk_idxs < pulse_regions(n_p_blcks,2)) & ...
+        (spike_info.spont_spk_idxs > pulse_regions(n_p_blcks,1)));
+    if (n_p_blcks < size(pulse_regions,1))
+        spont_winds(n_p_blcks) = sum((spike_info.spont_spk_idxs > pulse_regions(n_p_blcks,2)) & ...
+            (spike_info.spont_spk_idxs < pulse_regions(n_p_blcks+1,1)));
+    end
+end
+spont_winds(n_p_blcks)= sum(spike_info.spont_spk_idxs > pulse_regions(n_p_blcks,2));
+
+
+%%
+n_ps = n_pulses(use_winds);
+time_ds = time_diffs(use_winds);
+p_spks = pulsespk(use_winds);
+spont_spks = spontspk(use_winds);
+spont_win = spont_winds(use_winds);
+figure(41); subplot(2,1,1);
+plot(n_ps./time_ds,(p_spks + spont_spks)./time_ds,'k.'); hold on;
+plot(zeros(size(spont_win)),spont_win./time_ds,'r.');
+ylabel('Firng Rate (sps)'); xlabel('Pulse Rate (pps)')
+set(gca,'fontsize',16)
+subplot(2,1,2);
+
+
+%Group by pulse rate:
+pulse_rates = round(n_ps./time_ds);
+un_prs = unique(pulse_rates);
+for n_un_prs  = 1:length(unique(pulse_rates))
+    pr_info(n_un_prs).idx = find(abs(pulse_rates - un_prs(n_un_prs)) < 1);
+    pr_info(n_un_prs).pr_val = un_prs(n_un_prs);
+    
+    pr_idxs =  pr_info(n_un_prs).idx;
+    errorbar(0,mean(spont_win./time_ds),...
+        std(spont_win./time_ds),'r.-'); hold on;
+    errorbar(mean(n_ps(pr_idxs)./time_ds(pr_idxs)),...
+        mean((p_spks( pr_idxs) + spont_spks( pr_idxs))./time_ds( pr_idxs)),...
+        std((p_spks( pr_idxs) + spont_spks( pr_idxs))./time_ds( pr_idxs)),'k.');
+    avg_frs(n_un_prs) =mean((p_spks( pr_idxs) + spont_spks( pr_idxs))./time_ds( pr_idxs));
+end
 
 % Predict with model:
 addpath('/Users/cynthiasteinhardt/Dropbox/single-neuron-stim-model/vestibular-neuron-models/vest_model_pulsatile/simpler_format')
@@ -94,7 +163,6 @@ plot(0:400,fr_pred_best,'b'); hold on;
 %plot([0 [pr_info.pr_val]],mean(spont_win./time_ds) + [0 short_pred],'o','color','b');%col_dir(amp_grp+col_shift,:,:));
 plot([0:350],mean(spont_win./time_ds) +full_pred,':','color','m');%col_dir(amp_grp+col_shift,:,:),'linewidth',1);
 set(gca,'fontsize',16)
-end
 
 function [spike_info] = find_AP_times(cur_timing,cur_spiking,cur_stim, k_thresh_min_max,pulse_art_wind,fig_num,plot_it)
 %Find Pulse times:
@@ -207,13 +275,12 @@ end
 
 comp_spspk_norm = mean(max(zmean_resp,[],2) - min(zmean_resp,[],2));
 %figure(8); plot(spnt_orig_wind');%spnt_wind');
-if plot_it
 figure(10);
 %for n_spnt = 1:length(spont_idxs)
    plot(-50:40,spnt_orig_wind'./comp_spspk_norm); title(num2str(cur_timing(corr_idx(n_spnt,1)))); hold on;
    %pause;  
 %end
-end
+
 
 % %Try again to align to peak: (important especially for afferent 7)
      [max_val idx_max]=max( norm2_p_resp,[],2);
@@ -295,77 +362,4 @@ spike_info.pulse_evoked_spk_idxs = sort(pulse_start(sim_idxs(1: cut_off_idx )));
 spike_info.spont_spk_idxs = spont_idxs;
 
 
-end
-
-
-function [avg_frs, pr_info, spont_win, time_ds] = sort_spk_to_pfr(spike_info,cur_timing)
-%Turn sorted spikes into firing rate:
-%Find simulation blocks
-new_block_cutoff = 1e4;
-pulse_blck_breaks = find(diff(spike_info.pulses_tot) > new_block_cutoff);
-
-clear pulse_regions
-pulse_regions(1,:) = [spike_info.pulses_tot(1) spike_info.pulses_tot(pulse_blck_breaks(1))];
-for n_p_reg= 1:length(pulse_blck_breaks)-1
-    [pulse_blck_breaks(n_p_reg)+1 pulse_blck_breaks(n_p_reg+1)]
-    pulse_regions(n_p_reg+1,:) = [spike_info.pulses_tot(pulse_blck_breaks(n_p_reg)+1) spike_info.pulses_tot(pulse_blck_breaks(n_p_reg+1))];
-end
-pulse_regions(n_p_reg+2,:) = [spike_info.pulses_tot(pulse_blck_breaks(end)+1) spike_info.pulses_tot(end)];
-
-
-time_diffs=( (cur_timing(pulse_regions(:,2)) - cur_timing(pulse_regions(:,1)))); %ms --> s
-use_winds = (time_diffs ~= 0);
-
-for n_p_reg= 1:size(pulse_regions,1)
-    if ismember(n_p_reg,find(use_winds))
-        plot(cur_timing(pulse_regions(n_p_reg,1)),ones(size(pulse_blck_breaks)),'ro')
-        plot(cur_timing(pulse_regions(n_p_reg,2)),ones(size(pulse_blck_breaks)),'r*')
-    end
-end
-
-%Num pulses per block:
-clear n_pulses pulsespk spontspk spont_winds
-for n_p_blcks = 1:size(pulse_regions,1)
-    n_pulses(n_p_blcks) = sum((spike_info.pulses_tot < pulse_regions(n_p_blcks,2)) & ...
-        (spike_info.pulses_tot > pulse_regions(n_p_blcks,1)));
-    pulsespk(n_p_blcks) = sum((spike_info.pulse_evoked_spk_idxs < pulse_regions(n_p_blcks,2)) & ...
-        (spike_info.pulse_evoked_spk_idxs > pulse_regions(n_p_blcks,1)));
-    spontspk(n_p_blcks) = sum((spike_info.spont_spk_idxs < pulse_regions(n_p_blcks,2)) & ...
-        (spike_info.spont_spk_idxs > pulse_regions(n_p_blcks,1)));
-    if (n_p_blcks < size(pulse_regions,1))
-        spont_winds(n_p_blcks) = sum((spike_info.spont_spk_idxs > pulse_regions(n_p_blcks,2)) & ...
-            (spike_info.spont_spk_idxs < pulse_regions(n_p_blcks+1,1)));
-    end
-end
-spont_winds(n_p_blcks)= sum(spike_info.spont_spk_idxs > pulse_regions(n_p_blcks,2));
-
-n_ps = n_pulses(use_winds);
-time_ds = time_diffs(use_winds);
-p_spks = pulsespk(use_winds);
-spont_spks = spontspk(use_winds);
-spont_win = spont_winds(use_winds);
-
-
-figure(41); subplot(2,1,1);
-plot(n_ps./time_ds,(p_spks + spont_spks)./time_ds,'k.'); hold on;
-plot(zeros(size(spont_win)),spont_win./time_ds,'r.');
-ylabel('Firng Rate (sps)'); xlabel('Pulse Rate (pps)')
-set(gca,'fontsize',16)
-subplot(2,1,2);
-
-%Group by pulse rate:
-pulse_rates = round(n_ps./time_ds);
-un_prs = unique(pulse_rates);
-for n_un_prs  = 1:length(unique(pulse_rates))
-    pr_info(n_un_prs).idx = find(abs(pulse_rates - un_prs(n_un_prs)) < 1);
-    pr_info(n_un_prs).pr_val = un_prs(n_un_prs);
-    
-    pr_idxs =  pr_info(n_un_prs).idx;
-    errorbar(0,mean(spont_win./time_ds),...
-        std(spont_win./time_ds),'r.-'); hold on;
-    errorbar(mean(n_ps(pr_idxs)./time_ds(pr_idxs)),...
-        mean((p_spks( pr_idxs) + spont_spks( pr_idxs))./time_ds( pr_idxs)),...
-        std((p_spks( pr_idxs) + spont_spks( pr_idxs))./time_ds( pr_idxs)),'k.');
-    avg_frs(n_un_prs) =mean((p_spks( pr_idxs) + spont_spks( pr_idxs))./time_ds( pr_idxs));
-end
 end
