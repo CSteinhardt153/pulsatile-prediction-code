@@ -9,3 +9,6 @@ _simulation_code_
 _prediction_code_
 - ephys_data_analysis_5_9_21.m is the main file that imports data and run the prediction algorithm and data analysis
 - - currently works with data processed by DM
+
+_data_analysis_code_
+- made pp_sp_sort.m to sort spont v. pulse artifact time to get more accurate analysis of pulse rate firing rate relationship
