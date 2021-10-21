@@ -880,7 +880,7 @@ C = 5;% iregular 2 - regular?
 HV_i = -450:450%[0:4095];%0-2048-4095 = [-450, 0, +450]
 A = atanh(2*f_baseline./f_max -1);
 fr = 0.5*f_max.*(1+tanh(A+C*((HV_i + 450)/450 - 1))); %firing rate for each head velocity
-dT = 1./f;
+%dT = 1./f;
 
 figure(1); subplot(2,1,1); plot(HV_i,fr);
 xlabel('Head  Veloctiy (degrees)'); ylabel('Firing Rate (sps)')
@@ -1155,10 +1155,10 @@ disp(sprintf('PRM:%s,Freq:%s,EPSC rate(ms):%s',num2str(override.rate_mode), ...
     num2str(firing.mod_freq), num2str(override.sim_info.mu_IPT)));
 for n_reps = 1:10
 out = run_chosen_expt(expt,run_mode,override,output);
-sim_corrs(n_combos,n_reps,n_freq,:) = out.corr_mdf;
-sim_corr_prs(n_combos,n_reps,n_freq,:) = out.corr_pr;
+sim_corrs(n_combos,n_reps,n_freq,:) = out.corr;%_mdf;
+%sim_corr_prs(n_combos,n_reps,n_freq,:) = out.corr_pr;
 sim_fr(n_combos,n_reps,n_freq,:) = out.fr_vect;
-sim_mod(n_combos,n_reps,n_freq,:) = out.mod_vect;
+%sim_mod(n_combos,n_reps,n_freq,:) = out.mod_vect;
 sim_pr(n_combos,n_reps,n_freq,:) = out.pr_vect;
 sim_ts(n_combos,n_reps,n_freq,:) = out.t_vect;
 end
@@ -1193,9 +1193,6 @@ shadedErrorBar(freq_tests,(squeeze(mean(sim_corrs(n,:,:),2))),(squeeze(std(sim_c
 %squeeze(std(sim_fr(1,:,:,:),[],3));
 xlabel('Freq (Hz)'); ylabel('Corr ')
 end
-%%
-
-
 
 %%
 %Plot results:
@@ -1364,6 +1361,9 @@ end
 % %Male BVL1 DFNA9 - PAN - 200 pps 200 uA base line:
 % %high modulation:  56 uA+- and 55 pps
 % %Modulation frequency 1 Hz
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% FUNCTIONS FOR ABOVE
 
 %hist_mod_IPI_ISI(5,13)

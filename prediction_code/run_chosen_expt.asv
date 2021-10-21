@@ -369,27 +369,15 @@ if ismember(expt.num,[6])
     plot_it = 1;
 
     curr_options = override.curr_options;
-    if override.rate_mode == 0
-        if sum(override.firing.mod_f == override.firing.best_I) == length(override.firing.mod_f)
-            curr_col = 'b';
-            title_str = 'Best ';
-            figure(1011);
-        else
-            curr_col = 'r';
-            title_str = 'I=FR';
-            figure(1010);
-        end
+    
+    if sum(override.firing.mod_f == override.firing.best_I) == length(override.firing.mod_f)
+        curr_col = 'b';
+        title_str = 'Best ';
     else
-        if sum(override.firing.mod_f == override.firing.best_pr) == length(override.firing.mod_f)
-            curr_col = 'b';
-            title_str = 'Best ';
-            figure(1021);
-        else
-            curr_col = 'r';
-            title_str = 'FR=PR ';
-              figure(1020);
-        end
-    end 
+        curr_col = 'r';
+        title_str = 'FR=PR'
+    end
+    
     for n_reps = 1:override.tot_reps
     [firing sim_info] = pulse_modulator(sim_info,override.firing,curr_options, change_params, tot_reps, output,override.rate_mode)
     %Plot Firing Rate Over Time
@@ -420,47 +408,31 @@ if ismember(expt.num,[6])
     %use_bins_fr = 550:size(fr_per_bin,2);
     if plot_it
         
-       
+        figure(1011);
         a2= subplot(3,1,2); 
         plot(firing.I_timing*1e3,firing.I_st*-20); ylabel('I_{st} (uA)');
         xlim([400+150 sim_info.sim_time]); %ylim([0 300])
         box off;
         a3=subplot(3,1,3);plot(400+150+firing.goal_fr_t*1e3,firing.goal_fr,'k'); hold on; 
         ylabel('Target FR (sps)'); box off;
-        fr_fin = shadedErrorBar(use_bins_fr,sum(fr_per_bin,1)/(n_reps),std(fr_per_bin,[],1),'lineProps',{'-','color',curr_col});
+        fr_fin = shadedErrorBar(use_bins_fr,sum(fr_per_bin,1)/(n_reps),std(fr_per_bin,[],1),'lineProps',{'-','color','r'});
         
         %fr_fin = plot(15+bin_times(use_bins_fr),fr_per_bin(use_bins_fr),'r'); hold on;
         xlabel('Time (ms)'); ylabel('Firing Rate (sps)')
         xlim([400+150 sim_info.sim_time]); hold on; 
         
         a1=subplot(3,1,1);
-        if override.rate_mode == 0
-            pr_o = plot(firing.fin_t*1e3,firing.fin_m*-20,'b'); hold on;
-            ylabel('I (uA)')
-        else
         pr_o = plot(firing.fin_t*1e3,firing.fin_m,'b'); hold on;
-        ylabel('Pulse Rate (sps)')
-        end
         %pr_fin = plot(bin_times(use_bins),pulse_per_bin(use_bins),'b'); hold on;
-        xlabel('Time (ms)'); 
+        xlabel('Time (ms)'); ylabel('Pulse Rate (sps)')
         xlim([400+150 sim_info.sim_time]); %ylim([0 300]); hold on; 
         %ylim([0 300])
         % subplot(3,1,3);
          box off;
         %ylim([0 300])
-        title(sprintf('PRM %s pps [+- %s], %s',num2str(override.firing.pm_base),num2str(override.firing.pm_mod_amp),title_str));
-        
+        title(sprintf('PRM %s pps [+- %s]',num2str(override.firing.pm_base),num2str(override.firing.pm_mod_amp)));
         legend([pr_o fr_fin.mainLine],'PR (desired)','FR ma')
         linkaxes([a1 a2 a3],'x')
-        
-        f_max = 350;
-        f_baseline = 100;
-        C = 5;% iregular 2 - regular?
-        A = atanh(2*f_baseline./f_max -1);
-        fr_t_HV = @(fr_i) 450*(1+ ((atanh((fr_i/(.5*f_max)) - 1) - A)/C)) - 450;
-        figure(8);
-        hv_fin = plot(use_bins_fr,fr_t_HV(sum(fr_per_bin,1)/(n_reps)),'-','color',curr_col);
-        
     end
     
     center_time = sim_info.sim_start_time; %ms

@@ -17,7 +17,7 @@
 clear;
 
 plot_outputs = 1; % Plot the final fittings/ spike sorting
-plot_steps = 0; % Plot the intermediates (kaiser threshold, etc. good for fitting new data)
+plot_steps = 1; % Plot the intermediates (kaiser threshold, etc. good for fitting new data)
 
 
 data_dir = '/Users/cynthiasteinhardt/Dropbox/Fridman_lab/submissions/pulsatile/diana_raw_data_reanalysis_7_26_21';
@@ -29,26 +29,51 @@ file_names = dir('rawdata_aff*.mat');
 aff_sort_setting = [1, 2.5e5, 3.5e5, 80;
              7, 1e3, 2e3, 120];
 
-for n_dat_fs = 1:length(file_names)
+% aff_7_data_time_splits = [0 50; 62 140; 155 218; 229 inf];   
+% aff_7_amps = [42 84 126 168];
+% %% Splitting up afferent 7:
+% aff_dat = load('rawdata_afferent7.mat');
+% for n_split_pt =  1:size(aff_7_data_time_splits,1)
+%  split_dat(n_split_pt).dat = ((aff_dat.t/1e3) >= aff_7_data_time_splits(n_split_pt,1)) & ...
+%     ((aff_dat.t/1e3) < aff_7_data_time_splits(n_split_pt,2));
+% figure(1); plot(split_dat(n_split_pt).dat); hold on;
+% 
+% rawspk = aff_dat.rawspk(split_dat(n_split_pt).dat);
+% stim = aff_dat.stim(split_dat(n_split_pt).dat);
+% t = aff_dat.t(split_dat(n_split_pt).dat) - min(aff_dat.t(split_dat(n_split_pt).dat));
+% temp_avg=  aff_dat.temp_avg;
+% curr_amp = aff_7_amps(n_split_pt);
+% unit = 'ms';
+% 
+% save(sprintf('rawdata_afferent7_%suA',num2str(curr_amp)),'rawspk','stim','t','temp_avg','curr_amp','unit');
+% 
+% 
+% end
+
+
+%%
+for n_dat_fs = 2:length(file_names)
 disp(sprintf('Starting new afferent: %s', file_names(n_dat_fs).name ))
 aff_dat = load(file_names(n_dat_fs).name);
 stim_trace = aff_dat.stim;
 raw_spiking = aff_dat.rawspk;
 
-if  strcmp(file_names(n_dat_fs).name, 'rawdata_afferent7.mat')
+if  contains(file_names(n_dat_fs).name, 'rawdata_afferent7_')
     raw_spiking= -aff_dat.rawspk;
 end
-tmp = strsplit(file_names(n_dat_fs).name,'rawdata_afferent')
-aff_num = str2num(tmp{2}(1:end-4));
+tmp = strsplit(file_names(n_dat_fs).name,'rawdata_afferent');
+tmp2 = strsplit(tmp{2},'_')'
+aff_num = str2num(tmp2{1});
+curr_amp = str2num(tmp2{2}(1:end-6));
 
 %Plot the raw:
 if plot_steps
     figure;
     ax(1) = subplot(2,1,1);
-    plot(stim_trace,'r');
+    plot(aff_dat.t,stim_trace,'r');
         title(file_names(n_dat_fs).name(9:end-4)); ylabel('V (mV)')
      ax(2) = subplot(2,1,2);
-     plot(raw_spiking,'k');hold on;
+     plot(aff_dat.t,raw_spiking,'k');hold on;
      linkaxes(ax,'x');
 
 end
@@ -241,6 +266,18 @@ most_common_shape = sum((post_pulse_cos_sim > 0.99));
 %Chose max comon shape as the reference shape:
 ref_shape = norm2_pulse_resp(idx_max,:);
 
+figure(7); plot(norm2_pulse_resp'); hold on; plot(norm2_pulse_resp(idx_max,:)','k','linewidth',2);
+
+figure(8); plot((norm2_pulse_resp - norm2_pulse_resp(idx_max,:))'); hold on; plot(norm2_pulse_resp(idx_max,:)','k','linewidth',2);
+
+% figure(6); 
+% for n = 1:size(norm2_pulse_resp,1)
+%     plot(cur_timing(1:size(norm2_pulse_resp,2)),norm2_pulse_resp(n,:),'b'); hold on;
+%     plot(cur_timing(1:size(norm2_pulse_resp,2)),norm2_pulse_resp(idx_max,:)','k','linewidth',2); 
+%     plot(cur_timing(1:size(norm2_pulse_resp,2)),(norm2_pulse_resp(n,:) - norm2_pulse_resp(idx_max,:))','r','linewidth',2); 
+%     title(num2str(n));pause; cla;
+% end
+
 %%% Knee point algorithm on cosine symmetry seems to work best
 %By knee point algorithm would need to
 
@@ -282,7 +319,7 @@ if plot_it
 end
 
 % Where  check if sorting actually worked: 
-figure(fig_num);
+figure;
 subplot(2,1,1);plot((ordered_cos_sims)); hold on;
 plot(cut_off_idx,ordered_cos_sims(cut_off_idx),'r*');
 subplot(2,2,3); plot(norm2_pulse_resp(sim_idxs(1:cut_off_idx),:)'); hold on;
@@ -360,12 +397,14 @@ for n_un_prs  = 1:length(unique(pulse_rates))
     pr_info(n_un_prs).idx = find(abs(pulse_rates - un_prs(n_un_prs)) < 1);
     pr_info(n_un_prs).pr_val = un_prs(n_un_prs);
     
+    %Fix into means and stds:
     pr_idxs =  pr_info(n_un_prs).idx;
     errorbar(0,mean(spont_win./time_ds),...
         std(spont_win./time_ds),'r.-'); hold on;
     errorbar(mean(n_ps(pr_idxs)./time_ds(pr_idxs)),...
         mean((p_spks( pr_idxs) + spont_spks( pr_idxs))./time_ds( pr_idxs)),...
-        std((p_spks( pr_idxs) + spont_spks( pr_idxs))./time_ds( pr_idxs)),'k.');
+        std((p_spks( pr_idxs) + spont_spks( pr_idxs))./time_ds( pr_idxs)),'g.-');
     avg_frs(n_un_prs) =mean((p_spks( pr_idxs) + spont_spks( pr_idxs))./time_ds( pr_idxs));
 end
+%Plot as line here:
 end

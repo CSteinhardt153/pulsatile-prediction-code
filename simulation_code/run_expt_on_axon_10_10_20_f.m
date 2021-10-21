@@ -173,7 +173,7 @@ if ~sim_info.isDC
     %blank out around artifact zone so that
     for n_pulse = 1:length(change_params.pulse_timing)
         
-        spk_ts(ismember(spk_ts,[change_params.pulse_timing(n_pulse)-300:change_params.pulse_timing(n_pulse)+400])) = [];
+        spk_ts(ismember(spk_ts,[change_params.pulse_timing(n_pulse)-300:change_params.pulse_timing(n_pulse)+100])) = [];
         %not_spks = find((spk_ts > pulse_timing(n_pulse)-10) & (spk_ts < pulse_timing(n_pulse)+300));
         %spk_ts(spk_ts not_spks) = [];
         
@@ -435,7 +435,7 @@ end
 %% Functions used for above
 % %Spike Detection
     function [is_spike,spk_hght] = detect_spikes(V, dt)
-        delta_t = 0.01;%ms
+        delta_t = 0.17;%0.01;5;%ms
         C1 = -20;
         C2 = 20; %mV
         %C1_epsp = -10; C2_epsp = 10; %mV
@@ -446,7 +446,7 @@ end
         min_V = -35;
         spk_hght=  []; is_spike= [];
         for t_o = (1+dt_step2):(length(V) - dt_step2)
-            if (V(t_o) > min_V) & (V(t_o) > V(t_o + dt_steps)) & (V(t_o) > V(t_o - dt_steps)) %&(V(t_o) > 0)
+            if (V(t_o) > min_V) & (V(t_o) > V(t_o + dt_steps)) & (V(t_o) > V(t_o - dt_steps)) 
                 %...& (V(t_o) < 120) ...   & (abs(V(t_o)- V(t_o +1)) < .25)
                 is_spike(t_o) = 1;
                 % is_EPSP(t_o) = 1;
