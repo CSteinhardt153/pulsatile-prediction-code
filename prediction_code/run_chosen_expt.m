@@ -243,11 +243,14 @@ if ismember(expt.num,[3 4])
     if do_parallel 
         output.vis_plots = 0; 
     end
-    save_out = 1;
+    save_out = 0;
     gNs = [gNas, gKLs, gKHs];
     tic
     [spiking_info,fr, avg_CV, avg_ISI] = pulse_adapt_expt_indiv(sim_info,curr_options, pulse_rate, output,change_params, tot_reps,do_parallel,expt, gNs);
     toc
+    output.fr = fr;
+    output.Is = curr_options;
+    output.prs = pulse_rate;
     if save_out
         cd('/Users/cynthiasteinhardt/Dropbox/single-neuron-stim-model/vestibular-neuron-models/vest_model_pulsatile/simpler_format/relev_data/reg_irreg_simulations')
 %'/Users/cynthiasteinhardt/Dropbox/single-neuron-stim-model/vestibular-neuron-models/vest_model_pulsatile/simpler_format/relev_data/')
@@ -373,7 +376,7 @@ if ismember(expt.num,[6])
         if sum(override.firing.mod_f == override.firing.best_I) == length(override.firing.mod_f)
             curr_col = 'b';
             title_str = 'Best ';
-            figure(1011);
+            figure(1013);
         else
             curr_col = 'r';
             title_str = 'I=FR';
@@ -390,6 +393,7 @@ if ismember(expt.num,[6])
               figure(1020);
         end
     end 
+    
     for n_reps = 1:override.tot_reps
     [firing sim_info] = pulse_modulator(sim_info,override.firing,curr_options, change_params, tot_reps, output,override.rate_mode)
     %Plot Firing Rate Over Time
@@ -398,8 +402,7 @@ if ismember(expt.num,[6])
     start_times = 550+bin_hlf_wdth(1);    
     
     [fr_per_tmp bin_times] = moving_avg_fr_shifts(sim_info,  firing.rep.times, bin_hlf_wdth,start_times,[]);
-    %[fr_per_bin(n_reps,:) bin_times] = moving_avg_fr(sim_info,  firing.rep.times, bin_hlf_wdth, []);
-    
+    %[fr_per_bin(n_reps,:) bin_times] = moving_avg_fr(sim_info,  firing.rep.times, bin_hlf_wdth, []);  
     %fr_per_bin(n_reps,bin_times) = fr_per_tmp;
     fr_per_bin(n_reps,:) = fr_per_tmp;
     [a use_idx]=min(abs(bin_times - 550));
@@ -420,7 +423,6 @@ if ismember(expt.num,[6])
     %use_bins_fr = 550:size(fr_per_bin,2);
     if plot_it
         
-       
         a2= subplot(3,1,2); 
         plot(firing.I_timing*1e3,firing.I_st*-20); ylabel('I_{st} (uA)');
         xlim([400+150 sim_info.sim_time]); %ylim([0 300])
@@ -458,8 +460,8 @@ if ismember(expt.num,[6])
         C = 5;% iregular 2 - regular?
         A = atanh(2*f_baseline./f_max -1);
         fr_t_HV = @(fr_i) 450*(1+ ((atanh((fr_i/(.5*f_max)) - 1) - A)/C)) - 450;
-        figure(8);
-        hv_fin = plot(use_bins_fr,fr_t_HV(sum(fr_per_bin,1)/(n_reps)),'-','color',curr_col);
+        %figure(8);
+        %hv_fin = plot(use_bins_fr,fr_t_HV(sum(fr_per_bin,1)/(n_reps)),'-','color',curr_col);
         
     end
     

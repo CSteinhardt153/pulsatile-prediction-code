@@ -90,7 +90,7 @@ else
     pr = firing.pm_base; %pps
     p_times = 1:round((1e3/pr)*1e3):sim_time*1e6;
     pulse_times = round(p_times+delay*1e3+sim_info.sim_start_time*1e3);
-    pulse_times = pulse_times(pulse_times < round(sim_time*1e6));
+    pulse_times = pulse_times(pulse_times < round(sim_time*1e6-2*stim_interv));
     if firing.set_f
         mod_function = input_mod_f.mod_f/-20;
     else

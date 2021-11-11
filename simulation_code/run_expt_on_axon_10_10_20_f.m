@@ -161,7 +161,7 @@ end
 
 %% Visualizing specific nodes/ propagation
 
-%view_node = synapse_node;
+%view_node = synapse_node; 
 %end_elec = synapse_loc+7;%size(V,1)-1;
 %view_node =  sim_info.stim_loc_choice;%synapse_loc+1; %end_elec;
 
@@ -173,7 +173,7 @@ if ~sim_info.isDC
     %blank out around artifact zone so that
     for n_pulse = 1:length(change_params.pulse_timing)
         
-        spk_ts(ismember(spk_ts,[change_params.pulse_timing(n_pulse)-300:change_params.pulse_timing(n_pulse)+100])) = [];
+        spk_ts(ismember(spk_ts,[change_params.pulse_timing(n_pulse)-300:change_params.pulse_timing(n_pulse)+300])) = [];
         %not_spks = find((spk_ts > pulse_timing(n_pulse)-10) & (spk_ts < pulse_timing(n_pulse)+300));
         %spk_ts(spk_ts not_spks) = [];
         
@@ -235,14 +235,14 @@ disp(sprintf('ISI %s, CV %s fr:%s',...
 
 
 %Plot simulation in simulation timing ( look at V etc.)
-   show_rel_timing = 0;
+show_rel_timing = 1;
 if output.vis_plots
     sim_timing = [0:dt:sim_info.sim_time];
-        if ~sim_info.inj_cur(1) & sim_info.inj_cur(2)
-            I_inj_tot = 1e-6*axon_inputs.I_epsc/(Cm*S); %pA
-            is_EPSC = 'has';
-            ylabel('Total I_{inj} [at axon] (pA)')
-        else
+    if ~sim_info.inj_cur(1) & sim_info.inj_cur(2)
+        I_inj_tot = 1e-6*axon_inputs.I_epsc/(Cm*S); %pA
+        is_EPSC = 'has';
+        ylabel('Total I_{inj} [at axon] (pA)')
+    else
         if sim_info.inj_cur(1) & ~sim_info.inj_cur(2)
             
             I_inj_tot = axon_inputs.V_stim; % I_stim(mA)
@@ -251,102 +251,103 @@ if output.vis_plots
         if sim_info.inj_cur(1) & sim_info.inj_cur(2)
             I_inj_tot =  axon_inputs.V_stim+axon_inputs.I_epsc; % (mA+mA)
             is_EPSC = 'has';
-        end   
+        end
+    end
     
     
+    %(output.vis_plot_num)
     
-   %(output.vis_plot_num)
-        
-        just_ps = 0;
-         if just_ps
-              figure;
-         subplot(2,1,1);
-          plot(sim_timing(1:end-1),I_inj_tot*1e6);  hold on;
-            xlim([100 400]); box off; %    xlim([150 400]); box off;
+    just_ps = 0;
+    if just_ps
+        figure;
+        subplot(2,1,1);
+        plot(sim_timing(1:end-1),I_inj_tot*1e6);  hold on;
+        xlim([100 400]); box off; %    xlim([150 400]); box off;
         ylabel('Total I_{inj} [at axon] (mA)')
-          subplot(2,1,2);
-          plot(sim_timing(1:length(V)), V); hold on;%'k'); hold on;
-        if ~isnan(fin_spk_times)
-            plot(fin_spk_times,V(round(fin_spk_times/dt)),'.');
-        end
-        xlabel('time (ms)'); ylabel('V (mV)');
-         box off;
-          xlim([100 1000]);box off;
-         end
-        
-          figure;
-     if show_rel_timing
-        ax1 = subplot(4,1,1); 
-     else
-        ax1 = subplot(6,1,1);
-     end
-        
-            plot(sim_timing(1:end-1),I_inj_tot*1e6);  hold on;
-            xlim([100 400]); box off; %    xlim([150 400]); box off;
-        ylabel('Total I_{inj} [at axon] (mA)')
-        end
-        which_s = 1;
-        %title(sprintf('%s EPSC %d,I= %s,PR = %s ',is_EPSC,which_s,num2str(change_params.Inj_cur),num2str(change_params.pulse_rate)))
-        title(sprintf('%s EPSC %d,I= %s',is_EPSC,which_s,num2str(change_params.Inj_cur)))
-      
-        if   show_rel_timing
-        ax2 = subplot(4,1,2:3);
-        else
-        ax2= subplot(6,1,2:3);
-        end
-        %subplot(3,1,2);subplot(3,1,2:3)%
-        % plot(sim_timing(1:size(V,2)), V(output.view_node_1,:)); hold on;
+        subplot(2,1,2);
         plot(sim_timing(1:length(V)), V); hold on;%'k'); hold on;
         if ~isnan(fin_spk_times)
             plot(fin_spk_times,V(round(fin_spk_times/dt)),'.');
         end
         xlabel('time (ms)'); ylabel('V (mV)');
-         box off;
-          xlim([100 400]);box off;
-      % Show mod results for regular/irregular:
- 
-     if show_rel_timing
-         ipis = unique(diff(spiking_info.end.pulse_time));
-         ipi= mean(ipis(ipis > .002));
-         pr = 1e3/ipi;
-         rel_t_spk = mod(spiking_info.end.spk_times,ipi);
-         subplot(4,1,4); histogram(rel_t_spk,15)
-         box off;
-         
-         save_dir = '/Users/cynthiasteinhardt/Dropbox/Fridman_lab/submissions/pulsatile/pp_sp_ps_paper/';
-         
-      %%%   print(gcf, fullfile(save_dir, sprintf('I%s_P%s_reg%s_5_10_21.pdf',num2str(change_params.Inj_cur*-20),...
-       %%%         num2str(change_params.pulse_rate),num2str(sim_info.is_reg))), '-dpdf', '-r0');
-         %   saveas(gcf, fullfile(save_dir, sprintf('I%s_P%s_reg%s_5_10_21.eps',num2str(change_params.Inj_cur*-20),...
-         %       num2str(change_params.pulse_rate),num2str(sim_info.is_reg))), 'epsc');
-
-     else
-         
-      %   SHOW THE DYNAMICS:
-       ylim([-100 100])
-       ax3 =subplot(6,1,4); %subplot(3,3,7);
+        box off;
+        xlim([100 1000]);box off;
+    end
+    
+    figure;
+    if show_rel_timing
+        ax1 = subplot(4,1,1);
+    else
+        ax1 = subplot(6,1,1);
+    end
+    
+    plot(sim_timing(1:end-1),I_inj_tot*1e6);  hold on;
+    % xlim([100 400]); box off; %    xlim([150 400]); box off;
+    ylabel('Total I_{inj} [at axon] (mA)')
+    
+    which_s = 1;
+    %title(sprintf('%s EPSC %d,I= %s,PR = %s ',is_EPSC,which_s,num2str(change_params.Inj_cur),num2str(change_params.pulse_rate)))
+    title(sprintf('%s EPSC %d,I= %s',is_EPSC,which_s,num2str(change_params.Inj_cur)))
+    
+    if   show_rel_timing
+        ax2 = subplot(4,1,2:3);
+    else
+        ax2= subplot(6,1,2:3);
+    end
+    %subplot(3,1,2);subplot(3,1,2:3)%
+    % plot(sim_timing(1:size(V,2)), V(output.view_node_1,:)); hold on;
+    plot(sim_timing(1:length(V)), V); hold on;%'k'); hold on;
+    if ~isnan(fin_spk_times)
+        plot(fin_spk_times,V(round(fin_spk_times/dt)),'.');
+    end
+    xlabel('time (ms)'); ylabel('V (mV)');
+    box off;
+    %xlim([100 400]);box off;
+    % Show mod results for regular/irregular:
+    
+    if show_rel_timing
+        linkaxes([ax1 ax2 ],'x')
+        ipis = unique(diff(spiking_info.end.pulse_time));
+        ipi= mean(ipis(ipis > .002));
+        pr = 1e3/ipi;
+        rel_t_spk = mod(spiking_info.end.spk_times,ipi);
+        subplot(4,1,4); histogram(rel_t_spk,15)
+        box off;
+        
+        save_dir = '/Users/cynthiasteinhardt/Dropbox/Fridman_lab/submissions/pulsatile/pp_sp_ps_paper/';
+        
+        %%%   print(gcf, fullfile(save_dir, sprintf('I%s_P%s_reg%s_5_10_21.pdf',num2str(change_params.Inj_cur*-20),...
+        %%%         num2str(change_params.pulse_rate),num2str(sim_info.is_reg))), '-dpdf', '-r0');
+        %   saveas(gcf, fullfile(save_dir, sprintf('I%s_P%s_reg%s_5_10_21.eps',num2str(change_params.Inj_cur*-20),...
+        %       num2str(change_params.pulse_rate),num2str(sim_info.is_reg))), 'epsc');
+        
+    else
+        
+        %   SHOW THE DYNAMICS:
+        ylim([-100 100])
+        ax3 =subplot(6,1,4); %subplot(3,3,7);
         plot(sim_timing,w); hold on;
         plot(sim_timing,z);
         title('I_{KL}')
-     %       xlim([150 400])
-            ylim([0 1])
-            legend('w','z')
+        %       xlim([150 400])
+        ylim([0 1])
+        legend('w','z')
         ax4 = subplot(6,1,5);%subplot(3,3,8);
         plot(sim_timing,n,'k');hold on;
         plot(sim_timing,p);
         title('I_{KH}')
-     %       xlim([150 400])
-                  ylim([0 1])
-                  legend('n','p')
+        %       xlim([150 400])
+        ylim([0 1])
+        legend('n','p')
         ax5 = subplot(6,1,6);%subplot(3,3,9);
         plot(sim_timing,m);hold on;
         plot(sim_timing,h);
         title('I_{Na}')
-     %   xlim([150 400])
-              ylim([0 1])
+        %   xlim([150 400])
+        ylim([0 1])
         linkaxes([ax1 ax2 ax3 ax4 ax5],'x')
         legend('m','h')
-     end
+    end
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
