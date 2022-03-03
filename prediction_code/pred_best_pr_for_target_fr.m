@@ -14,10 +14,37 @@
 %%PM around 200 pps
 %Finding best pr to make similar fr: for the I,S combination
 S = 30; % sps
-I_cur = 150; %uA
+I_cur = 250; %uA
 pr_range = 0:.05:450;%0:.25:450;
 [frs_change] = interp_pred_f_5_5_21(I_cur,S,pr_range);
 mapped_frs = frs_change + S;
+
+%HV_map
+f_max = 350;
+f_baseline = 100;
+C = 5;% iregular 2 - regular?
+HV_i = -450:450%[0:4095];%0-2048-4095 = [-450, 0, +450]
+A = atanh(2*f_baseline./f_max -1);
+use_PR = 0.5*f_max.*(1+tanh(A+C*((HV_i + 450)/450 - 1))); %firing rate for each head velocity
+
+fr_t_HV = @(fr_i) 450*(1+ ((atanh((fr_i/(.5*f_max)) - 1) - A)/C)) - 450;
+
+for n_HV =1:length(HV_i)
+   [ a idx]= min(abs(use_PR(n_HV)-pr_range));
+   fr_seq(n_HV) =mapped_frs(idx);
+end
+figure(1); subplot(1,2,1); plot(pr_range,mapped_frs,'k');box off;
+ylabel('Firing Rate (sps)')
+xlabel('Pulse Rate (pps)'); title(['I = ' num2str(I_cur)])
+subplot(1,2,2);plot(HV_i,fr,'k'); hold on; 
+plot(HV_i,fr_seq,'m'); box off;
+plot(HV_i(1:max(find(fr < 110))),fr(1:max(find(fr < 110))),'b'); hold on;
+plot([HV_i(max(find(fr < 110))) 500], [fr(max(find(fr < 110))) fr(max(find(fr < 110)))],'b')
+xlabel('Head  Veloctiy (degree/s)'); ylabel('Firing Rate (sps)')
+%title('Natural irregular firign rate to head velocity')
+
+% plot(fr,HV_i,'r--')
+% xlabel('Firing Rate (sps)'); ylabel('Head Velocity (degrees)')
 
 
 %%
@@ -31,7 +58,7 @@ t = (0:dt:StopTime-dt)';     % seconds
 %%Sine wave:
 Fc = 4;%4;                     % hertz
 %fr_trajectory = 20*sin(2*pi*Fc*t)+40;%Fc = 4; 
-fr_trajectory = 80*sin(2*pi*Fc*t)+120;
+fr_trajectory = 50*sin(2*pi*Fc*t)+55;%80*sin(2*pi*Fc*t)+120;
 %fr_trajectory = 150 + 30*sin(2*pi*Fc*t) + 15*sin(2*pi*2.5*t + pi/5)+ 5*sin(2*pi*8*t + pi/3);
 % Plot the signal versus time:
 % figure(100);
@@ -39,9 +66,16 @@ fr_trajectory = 80*sin(2*pi*Fc*t)+120;
 % xlabel('Time (in seconds)');
 % ylabel('Firing Rate (sps)');
 % title('Target Firing Rate versus Time');
-fix_val = I_cur; fix_str = ' uA';
+fix_val = I_cur; fix_str = ' pps';
 [best_minned_stim_pr best_minned_stim_fr] = target_fr_to_best_pr(fr_trajectory, mapped_frs,pr_range,t,fix_val,S,fix_str);
 
+fix_str = 'uA';
+%Use the solved from simulation to find best PAM:
+
+best_or_no = 0; rate_mode = 1;
+cd('/Users/cynthiasteinhardt/Dropbox/code_directories/pulsatileDir/prediction_code');
+%addpath(genpath('/Users/cynthiasteinhardt/Dropbox/code_directories/pulsatileDir'));
+[out] = make_input_fr_pred(mu,S,I_cur,pr,t,best_minned_stim_pr,fr_trajectory,best_or_no,rate_mode)
 %%
 expt.num = [6];
 run_mode = 'override';%  {'exact','override'}; %can run the exact experiment from study, override some parameters, or do a new experiment
@@ -90,10 +124,10 @@ override.firing.pm_mod_amp = [];
 override.firing.mod_freq = [];
 override.sim_info.sim_time = override.firing.sim_time*1e3;
 override.rate_mode = 1; % 1 = rate mode, 0 = amplitude mode
-override.output.vis_plots = 1; %check pulses over time
+override.output.vis_plots = 0; %check pulses over time
 
 %override.pulse_rate = [0:25:350];
-override.tot_reps = 1;%10;
+override.tot_reps = 10;%10;
 out = run_chosen_expt(expt,run_mode,override,output);
 title(sprintf('Mapping for %s uA, S %s sps',num2str(-20*I_cur),num2str(S)));
 
@@ -128,8 +162,30 @@ t = (0:dt:StopTime-dt)';     % seconds
 Fc = 3;                     % hertz
 fr_trajectory = 50*sin(2*pi*Fc*t)+50;
 fr_trajectory = 50 + 25*sin(2*pi*Fc*t) + 15*sin(2*pi*2.5*t + pi/5)+ 5*sin(2*pi*8*t + pi/3);
-
 [best_minned_stim_I best_minned_stim_fr] = target_fr_to_best_pr(fr_trajectory, mapped_frs,I_range,t,pr,S,fix_str);
+
+%% Speech data set example fr: 2/14/22
+example_trace = [20 20 20 22 25 23 20 20 20 20 20 20 20 20 130 110 100 115 126 110 115 123 118 110  100 90 70 68 65 60 57 55 50 52 43 40 40 32 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30  30 30 30 30 30 30 30 30 30 30 30 30 30 40 50 55 60 80 73 70 68  75 68 65 62 60 58 57 55 57 58 60];
+fin_trace = 1.4*(example_trace+ 7*rand(size(example_trace)));
+%q = repmat(fin_trace,[40, 1]);
+%fr_trajectory = 1.3*( q(:)+ 7*rand(size(q(:))));
+full_len  = 3600;
+t = 0:dt:(full_len-1)*dt;
+fr_traj_full = interp1(linspace(t(1),t(end),length(fin_trace)),...
+    fin_trace,linspace(t(1),t(end),full_len))
+power_trace =    rand(1,38)+[0 0  0   5 21 3 21 24 10 5 3 2 0 3 0  0 0 0 0 0 0 0 0 0 0 0 0 3  2   0  3 1 5 2 1 0 1 0];
+p_trace_full = interp1(linspace(t(1),t(end),length(power_trace)),...
+    power_trace,linspace(t(1),t(end),length(t)));
+figure(9); subplot(2,1,1);
+plot(power_trace);
+subplot(2,1,2); plot(p_trace_full);
+
+figure(10); subplot(2,1,1);plot(example_trace+ 6*rand(size(example_trace)))
+subplot(2,1,2);plot(fr_traj_full);
+
+
+[best_minned_stim_I best_minned_stim_fr] = target_fr_to_best_pr(fr_traj_full, mapped_frs,I_range,t,pr,S,fix_str);
+
 %Previously used for pr (pulse rate) only now using for pr or pa.
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -277,6 +333,8 @@ I_cur =  nan; % because is PAM
 cd('/Users/cynthiasteinhardt/Dropbox/code_directories/pulsatileDir/prediction_code');
 %addpath(genpath('/Users/cynthiasteinhardt/Dropbox/code_directories/pulsatileDir'));
 [out] = make_input_fr_pred(mu,S,I_cur,pr,t,best_minned_stim_I,fr_trajectory,best_or_no,rate_mode)
+
+
 %% Compare with restoration of HV (head velocity)
 f_max = 350;
 f_baseline = 100;
@@ -429,7 +487,7 @@ for n_targ_ts = 1:refresh_interv:length(fr_trajectory)
     greater_in_idx = find(mapped_frs >= fr_trajectory(n_targ_ts));
     [greater_mses greater_idx]=sort(abs(fr_trajectory(n_targ_ts) - mapped_frs(greater_in_idx)));
     
-    if (fr_trajectory(n_targ_ts) == 0)
+    if (fr_trajectory(n_targ_ts) <= min(mapped_frs))
         if isempty(less_idx)
             [a idx] = min(mapped_frs);
             poten_ins = input_range(idx);
@@ -539,16 +597,63 @@ if plot_it
     % xlim([550 1300]*1e-3)
 end
 
-for n_vid = 1:30:length(best_minned_stim_in)
+do_vid =1;
+if do_vid
+newVid = VideoWriter('speech_conversion_2_14_22_fr_pulse', 'MPEG-4');
+%VideoWriter('vid_corr_pr_fr_11_11_21', 'MPEG-4'); % New
+fps= 20;
+newVid.FrameRate = fps;
+newVid.Quality = 100;
+open(newVid);
+
+pulse_time_sampling = round((1/350)/t(2));% not going ot use right now
+
+vid_step =  30;
+t_rel = 1:vid_step:length(best_minned_stim_in);
+    figure(900);clf;
+    set(gcf,'color','w');
+for n_vid = 1:vid_step:length(best_minned_stim_in)
+%     figure(900);
+%     subplot(3,1,1); cla;
+%     plot(input_range,mapped_frs,'k-'); hold on;
+%     plot(best_minned_stim_in(n_vid),best_minned_stim_fr(n_vid),'r.','markersize',10);
+%     subplot(3,1,2);%plot(t(t_rel),fr_trajectory(t_rel),'k'); hold on;
+%     plot(t(1:vid_step:n_vid),best_minned_stim_fr(1:vid_step:n_vid),'k','linewidth',2) 
+%      xlim([0 0.4]);
+%     subplot(3,1,3);
+%     plot([t(n_vid) t(n_vid)],[-(best_minned_stim_in(n_vid)/2) (best_minned_stim_in(n_vid)/2)],'k'); hold on;
+%     xlim([0 0.4]);
+%     %for loop overpulses
+%     %plot(t(t_rel),best_minned_stim_in(t_rel),'k'); hold on;
+%     %plot(t(1:vid_step:n_vid),best_minned_stim_in(1:vid_step:n_vid),'b','linewidth',2);
+
     figure(900);
-    subplot(3,1,1); cla;
-    plot(input_range,mapped_frs,'k-'); hold on;
-    plot(best_minned_stim_in(n_vid),best_minned_stim_fr(n_vid),'r.');
-    subplot(3,1,2);plot(t,best_minned_stim_in,'k'); hold on;
-    subplot(3,1,3);plot(t,fr_trajectory,'k'); hold on;
-    plot(t(n_vid),best_minned_stim_fr(n_vid),'r.','markersize',10) 
-    
+    subplot(1,2,1); set(gca,'fontsize',18); 
+    plot(t(1:vid_step:n_vid),best_minned_stim_fr(1:vid_step:n_vid),'k','linewidth',2) 
+    xlim([0 0.4]); box off; ylabel('Firing Rate (sps)')
+     xlabel('Time (ms)');
+     %ylabel('Power (W/Hz)'); ylim([0 25]);
+     ylim([0 200]);
+     set(gca,'fontsize',18)
+    subplot(1,2,2);
+     ylim([-140 140])
+     plot([0 0.4],[0 0],'k'); hold on;
+    plot([t(n_vid) t(n_vid)],[-(best_minned_stim_in(n_vid)) (best_minned_stim_in(n_vid))],'k'); hold on;
+   
+    xlim([0 0.4]); box off; ylabel('Pulse Amplitude (uA)');xlabel('Time (ms)')
+   set(gca,'fontsize',18);
+    %for loop overpulses
+    %plot(t(t_rel),best_minned_stim_in(t_rel),'k'); hold on;
+    %plot(t(1:vid_step:n_vid),best_minned_stim_in(1:vid_step:n_vid),'b','linewidth',2);
+
+    frame = getframe(gcf);
+    writeVideo(newVid,frame);
+   
+   %turn into pulse train ever
 end
+close(newVid)
+end
+
 end
 %%
 %where plot the moving averaged firing rate produced by the pulsatile
@@ -585,17 +690,15 @@ end
     {'tot_reps',1},{'sim_start_time',150},{'epsc_scale',1},{'sim_time',firing.sim_time*1e3});
 
 override.rate_mode = rate_mode; 
-if rate_mode
-    firing.best_pr = best_minned_stim_I;
-else
-    firing.best_I = best_minned_stim_I;
-end
+
 firing.goal_fr = fr_trajectory;
 if best_or_no
     if rate_mode
-        firing.mod_f = best_minned_stim_pr;%
+        firing.mod_f = best_minned_stim_I;%
+        override.firing.best_pr = firing.mod_f;
     else
-    firing.mod_f = best_minned_stim_I;%
+        firing.mod_f = best_minned_stim_I;%
+        override.firing.best_I = firing.mod_f;
     end
 else
     firing.mod_f = fr_trajectory;%

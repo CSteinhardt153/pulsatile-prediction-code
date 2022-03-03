@@ -72,7 +72,7 @@ if rate_mode
     
     
     %Variables for Simulation
-    
+    I_st = I_st(1:round(sim_time/dt));
     change_params.I_st = I_st;
     change_params.Inj_cur = curr_options;
     sim_info.isPlan = 1 ;

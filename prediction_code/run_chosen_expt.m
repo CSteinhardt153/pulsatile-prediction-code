@@ -373,7 +373,7 @@ if ismember(expt.num,[6])
 
     curr_options = override.curr_options;
     if override.rate_mode == 0
-        if sum(override.firing.mod_f == override.firing.best_I) == length(override.firing.mod_f)
+        if sum(override.firing.mod_f == override.firing.goal_fr) ~= length(override.firing.mod_f)
             curr_col = 'b';
             title_str = 'Best ';
             figure(1013);
@@ -383,7 +383,7 @@ if ismember(expt.num,[6])
             figure(1010);
         end
     else
-        if sum(override.firing.mod_f == override.firing.best_pr) == length(override.firing.mod_f)
+        if sum(override.firing.mod_f == override.firing.goal_fr) ~= length(override.firing.mod_f)
             curr_col = 'b';
             title_str = 'Best ';
             figure(1021);
