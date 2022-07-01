@@ -1,4 +1,4 @@
-function [I_idx,rms_best, fr_pred_best] = two_d_rms_eval(S_cur,prs_cur,real_y)
+function [I_idx,rms_best, fr_pred_best,mean_std_best] = two_d_rms_eval(S_cur,prs_cur,real_y)
 %Function for 2d rms  between full prediction and the input data
 %%%%%%%%%%%%%%%%
 if (size(real_y,1) < size(real_y,2))
@@ -48,11 +48,12 @@ shape_err = sum(rms_per_pt,1); %total error per current from best point
 
 tot_err = rmss + rmss.*.5.*idx_fins./200;%shape_err + I_idx;
 %[rms_tmp idx_tmp] = sort(tot_err );
-[rms_2 idx_2] = min(tot_err );
+[rms_2 idx_2] = min(tot_err);
 I_idx = I_range(idx_fins(idx_2));
 fr_pred_best = fr_preds(idx_fins(idx_2),:);
 
 rms_best = rmss(idx_2);%(1);
+mean_std_best =[mean(rms_per_pt(:,idx_fins(idx_2))) std(rms_per_pt(:,idx_fins(idx_2)))/size(rms_per_pt,1)]
 % % cols = jet(length(75:98))
 % % figure(100); 
 % % for n= 75:98

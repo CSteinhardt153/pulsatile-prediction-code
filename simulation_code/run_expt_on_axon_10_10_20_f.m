@@ -235,8 +235,8 @@ disp(sprintf('ISI %s, CV %s fr:%s',...
 
 
 %Plot simulation in simulation timing ( look at V etc.)
-show_rel_timing = 1;
-if output.vis_plots
+show_rel_timing = 0;
+if output.vis_plot
     sim_timing = [0:dt:sim_info.sim_time];
     if ~sim_info.inj_cur(1) & sim_info.inj_cur(2)
         I_inj_tot = 1e-6*axon_inputs.I_epsc/(Cm*S); %pA

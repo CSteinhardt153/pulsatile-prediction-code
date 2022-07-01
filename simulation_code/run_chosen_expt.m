@@ -189,7 +189,7 @@ change_params.neuron.gKH = gKHs;
 %% Individual runs with certain current amplitude pulsatile experiments
 %To test response across many pulse rates and current amplitudes run
 %with parfor
-tic
+%tic
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if isempty(expt.num)
     %Visualize a bunch of results including channels and specific spike
@@ -198,12 +198,11 @@ if isempty(expt.num)
         rng(1); % set see to be able to view APs
     end
    
-    output.vis_plot = 0;%plot #
+    %output.vis_plot = 1;%plot #
     output.pp_plot = 20;%phase plane analysis
     do_parallel = 0; % for observing individual trace responses
     [spiking_info,fr, avg_CV, avg_ISI] = pulse_adapt_expt_indiv(sim_info,curr_options, pulse_rate, output, change_params, tot_reps,do_parallel,expt,[]);
-    disp('FR, CV')
-    [fr avg_CV]
+
     plot_CV_ISI = 0;
     if plot_CV_ISI
         figure(4); loglog(avg_ISI(2:end),avg_CV(2:end),'g^'); hold on;
@@ -217,7 +216,9 @@ if isempty(expt.num)
         figure(5);
     [rel_times] = moving_avg_fr(sim_info, spiking_info.end.spk_times,50,2);
     end
-    
+    output.fr= fr;
+    output.CV = avg_CV;
+    output.ISI = avg_ISI;
 end
 
 
@@ -360,7 +361,7 @@ if ismember(expt.num,[5])
     disp([ sim_pm.mode ' , corr = ', num2str(sim_pm.corr_mdf)] );
     output = sim_pm;
 end
-toc
+%toc
 
 
 if ismember(expt.num,[6])

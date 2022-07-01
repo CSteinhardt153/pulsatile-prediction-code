@@ -48,7 +48,7 @@ mitchell_res =  [45 50 55 64 75 85 103 110]; %
    s.FaceAlpha = .5;
    xlabel('Pulse Amplitude (mA)'); ylabel('Pulse Rate (pps)'); zlabel('fr (sps)');
    set(gca,'fontsize',20);   zlim([0 175]);
-   
+   colormap('winter')
   %%%%[142.2576   16.9698]
   view([142.2576   16.9698])
   %%
@@ -105,7 +105,7 @@ set(gca,'fontsize',14); colorbar;
    
    
   
-   for n_pr =    use_prs
+   for n_pr = use_prs
         subplot(2,1,1);
        shadedErrorBar(all_currs(1:5:length(collision_sim_results_2)).*curr_corr*-1000,pr_cat_data((1:5:length(collision_sim_results_2))...
            , n_pr,1),pr_cat_data((1:5:length(collision_sim_results_2)),n_pr,2),'lineProps',{'-o','color',  pr_cols(n_pr+1,:)}); hold on;
@@ -247,7 +247,7 @@ run_mode = 'override';%  {'exact','override'}; %can run the exact experiment fro
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %Deciding what outputs to visualize:
-output.vis_plots = 1; %If want to see the afferent model APs without experiments
+output.vis_plot = 1; %If want to see the afferent model APs without experiments
 output.vis_plot_num = 6; %plot number when visualizing
 output.label_aps = 0; %This is meaningless if don't set the seed, etc. - for check if AP spont or pulse induced
 output.all_spk = 0;
@@ -256,13 +256,13 @@ output.demo_pulse_mod = 0;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%% If overriding - choosing specific parameters etc:
-pulse_rate = [125 150 175 200]; %[225 250 275 300 325];%[25:25:300]; %180;%%[50 80 120 150 200];%100 150 200 250 300 ]%0:5:350;%[0 25 50 200];
-curr_options = -9.36; 
+pulse_rate = [100 250 300];%[70:5:120]%[90 100 110]%[125 150 175 200]; %[225 250 275 300 325];%[25:25:300]; %180;%%[50 80 120 150 200];%100 150 200 250 300 ]%0:5:350;%[0 25 50 200];
+curr_options = -2.5;%-9.36; 
 
 [override] = set_overrides_v2(run_mode,output,{'pulse_rate',pulse_rate },{'curr_options',curr_options});
-
+override.sim_info.inj_cur = [1 0];
 %RUN EXPERIMENTS FROM HERE ('exact') settings are in this code:
-run_chosen_expt(expt,run_mode,override,output);
+output = run_chosen_expt(expt,run_mode,override,output);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -334,11 +334,11 @@ high_file_names = {'pr_fr_sim_I0-360_PR0-350_MInf_S0_R5_04_10_2021_09_17.mat','p
 %%
 %%
 col_s0 = winter(7);
-use_idxs =[22 27 31]% [2 11 12 14 15 16 18 23  30 33 35 36 38 39 42 44];
+use_idxs =[16 27 35]%[22 27 31]% [2 11 12 14 15 16 18 23  30 33 35 36 38 39 42 44];
 last_mins = nan(length(use_idxs),1);
 last_maxs = nan(length(use_idxs),1);
 n_cnt = 1;
-for n_S = 7:-1:1
+for n_S = 7:-2:1
     low_I = load(fullfile(data_dir_facil_axon,low_file_names{n_S}));
     higher_I = load(fullfile(data_dir_higher_axon,high_file_names{n_S}));
 S_curr_range = [low_I.curr_options*-20 higher_I.curr_options(9:end)*-20];
@@ -367,7 +367,7 @@ for n_S_curs = use_idxs%[2 11 12 14 15 16 18 21 23 26 30 33 35 36 38 39 42 44]%1
     I_cur = S_curr_range(n_S_curs);
     S_cur = S_frs(n_S_curs,1);%mean(squeeze(higher_I.fr(n_S_curs,1,:)));%
     prs_cur = low_I.pulse_rate;
-    [tot_pred_f] = interp_pred_f_5_5_21(I_cur,S_cur, prs_cur);%,[1 1]);
+    [tot_pred_f just_corr] = interp_pred_f_5_5_21(I_cur,S_cur, prs_cur);%,[1 1]);
     frs_fin = S_frs(n_S_curs,:) - S_frs(1,:);
     
     subplot(3,1,n_cnt);%subplot(4,4,n_cnt);%n_S_curs)
@@ -375,12 +375,15 @@ for n_S_curs = use_idxs%[2 11 12 14 15 16 18 21 23 26 30 33 35 36 38 39 42 44]%1
     % plot(low_I.pulse_rate,S0_frs(n_S0_curs,:),'-');%,'color',  col_s0(25-cnt,:),'linewidth',2); hold on;
    
     shadedErrorBar(low_I.pulse_rate,frs_fin ,S_frs_std(n_S_curs,:),'lineProps',{'-','color',  col_s0(8-n_S,:)}); hold on;
-  
      if S_cur < 2
     shadedErrorBar(low_I.pulse_rate,frs_fin ,S_frs_std(n_S_curs,:),'lineProps',{'k-','linewidth',2});%,'color',  col_s0(n_S0_curs,:)}); hold on;
     end
     hold on;
+    %%%Full model:
     plot(low_I.pulse_rate,tot_pred_f,'r');%+S_cur,'r')
+       %Simplification:
+    plot(low_I.pulse_rate,max(0,just_corr - S_cur),'m');
+
     cnt = cnt +1;
     title(['I = ' num2str(I_cur)])
     set(gca,'fontsize',12); box off;
@@ -414,20 +417,20 @@ end
 
 % best plots from interp_all_fun_w_interpolator_test_v2.m
 %% All traces in different colors: 6/5/21
-n_S=3
+n_S=5
     low_I = load(fullfile(data_dir_facil_axon,low_file_names{n_S}));
     higher_I = load(fullfile(data_dir_higher_axon,high_file_names{n_S}));
 S_curr_range = [low_I.curr_options*-20 higher_I.curr_options(9:end)*-20];
 S_frs = [mean(low_I.fr,3);mean(higher_I.fr(9:end,:,:),3)];
 S_frs_std = [std(low_I.fr,[],3);std(higher_I.fr(9:end,:,:),[],3)];
-figure(4);
+figure(2);
 pr_range = [0:400];
 
 %addpath('/Users/cynthiasteinhardt/Dropbox/Fridman_lab/submissions/pulsatile/pp_sp_ps_paper/pp_sp_figures/github_repo')
 col_amp = parula(length(S_curr_range));
 
 
-for n_S_curs = 1:length(S_curr_range) %0:44%12:20%
+for n_S_curs = 1:15%length(S_curr_range) %0:44%12:20%
      
     I_cur = S_curr_range(n_S_curs);
     S_cur = S_frs(n_S_curs,1);%mean(squeeze(higher_I.fr(n_S_curs,1,:)));%
@@ -636,8 +639,8 @@ output.demo_pulse_mod = 0;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%% If overriding - choosing specific parameters etc:
-pulse_rate = [80 85 90 100 110 120]; %[225 250 275 300 325];%[25:25:300]; %180;%%[50 80 120 150 200];%100 150 200 250 300 ]%0:5:350;%[0 25 50 200];
-curr_options = -13.8;%-9.36; 
+pulse_rate = [45:5:90];%[80 85 90 100 110 120]; %[225 250 275 300 325];%[25:25:300]; %180;%%[50 80 120 150 200];%100 150 200 250 300 ]%0:5:350;%[0 25 50 200];
+curr_options = -14.4%-13.8;%-9.36; 
 
 addpath('/Users/cynthiasteinhardt/Dropbox/single-neuron-stim-model/vestibular-neuron-models/vest_model_pulsatile/simpler_format');
 [override] = set_overrides_v2(run_mode,output,{'pulse_rate',pulse_rate },{'curr_options',curr_options});

@@ -72,15 +72,15 @@ for n_neurs = 1:length(aff_nums)
 end
 
 for n_neurs = 1:length(aff_nums)
-    aff_file_names = dir(fullfile(aff_dats(1).folder,sprintf('afferent%s*',num2str(aff_nums(n_neurs)))))
+    aff_file_names = dir(fullfile(aff_dats(1).folder,sprintf('afferent%s*',num2str(aff_nums(n_neurs)))));
     data_per_aff = load(fullfile(aff_file_names.folder,aff_file_names.name));
     plot_it= 0;
     %%[fin_nums base_fr] = data_t_fr(data_per_aff, plot_it,n_neurs,n_neurs,length(aff_nums),afferent_info,n_plot);
-    [fin_nums base_fr] = data_split(data_per_aff,plot_it,n_neurs,n_neurs,length(aff_nums),afferent_info,n_plot)
+    [fin_nums base_fr] = data_split(data_per_aff,plot_it,n_neurs,n_neurs,length(aff_nums),afferent_info,n_plot);
 
     indiv_slopes(n_neurs) = fin_nums.slope;%m_per_amp;
     clear fr_preds
-    S_cur = base_fr(1);
+    S_cur = base_fr(1) + .5*base_fr(2);
     for n_Is = 1:length(I_range)
         I_cur = I_range(n_Is);
            [tot_pred ] = interp_pred_f_5_5_21(I_cur,S_cur,fin_nums.pr(:,1)');
@@ -102,10 +102,9 @@ for n_neurs = 1:length(aff_nums)
     
     %Previous modeling:
     % [fin_fit best_run] = best_fr_prev_model(model_name,base_fr,fin_nums,n_neurs,1,1,cur_range,0,base_dir);
-    
-    figure(21); subplot(3,2,n_neurs);
-    
-    
+    disp(sprintf('Aff%d',n_neurs))
+    disp(fin_nums.pr(:,1)')
+    figure(20); subplot(2,3,n_neurs);
     errorbar([0; fin_nums.pr(:,1)],[base_fr(:,1); fin_nums.fr(:,1)],...
         [base_fr(:,2); fin_nums.fr(:,2)],'k.');
     hold on;
@@ -117,7 +116,7 @@ for n_neurs = 1:length(aff_nums)
     %    plot([0; fin_nums.pr_n(:,1)],[base_fr(:,1); fr_preds(idx_min,:)'],'r');
     
     %plot([0:300],full_pred+base_fr(:,1),'m--');
-    plot([0:400],fr_pred_best,'g--');
+    plot([0:400],fr_pred_best,'r--');
     xlabel('Pulse Rate'); ylabel('Firing Rate'); box off;
     title(sprintf('Afferent %s: CV*: %s, I: %s',num2str(aff_nums(n_neurs)), num2str(round(afferent_info(n_neurs,5),2)),num2str(I_best)))
     
@@ -290,6 +289,7 @@ disp('Starting Predictions ...')
 
 best_fit_Is=  nan(6,5);
 best_fit_rms=  nan(6,5);
+best_fit_rms_avg_std=  nan(6,5,2);
 cur_range = [0 300];
 for n_neur = 1:length(neuron_data)
   %figure(100 + n_neur);
@@ -314,26 +314,27 @@ for n_neur = 1:length(neuron_data)
         tmp_data.pr_n = neuron_data(n_neur).amp(n_amp).pr;
         n_amps = []; % use for making subplot
             
-        
         errorbar([0; tmp_data.pr_n(:,1)],[base_fr(1); tmp_data.fr_n(:,1)],...
            [base_fr(2); tmp_data.fr_n(:,2)],'.', 'color',col_dir(amp_grp+col_shift,:,:),'linewidth',1,'markersize',8); hold on;
 
        
-        [I_idx,rms_best,fr_pred_best] = two_d_rms_eval(base_fr(:,1), tmp_data.pr_n(:,1)',tmp_data.fr_n);
+        [I_idx,rms_best,fr_pred_best,mean_std_best] = two_d_rms_eval(base_fr(:,1), tmp_data.pr_n(:,1)',tmp_data.fr_n);
         [short_pred] = interp_pred_f_5_5_21(I_idx,base_fr(:,1),tmp_data.pr_n(:,1)');
          [full_pred] = interp_pred_f_5_5_21(I_idx,base_fr(:,1),[0:350]);
         
         best_fit_Is(n_neur,n_amp) = I_idx;
         best_fit_rms(n_neur,n_amp) = rms_best;
+        best_fit_rms_avg_std(n_neur,n_amp,:) = mean_std_best;
         plot([0; tmp_data.pr_n(:,1)],base_fr(:,1) + [0 short_pred],'o','color',col_dir(amp_grp+col_shift,:,:));
         plot([0:350],base_fr(:,1) +full_pred,':','color',col_dir(amp_grp+col_shift,:,:),'linewidth',1);  
 
+      %  rms_err(n_neur,n_amp) = rms([base_fr(1); tmp_data.fr_n(:,1)] - (base_fr(:,1) + [0 short_pred])')
+     
        % plot([0:300],full_pred+base_fr(:,1),'m--');
 
 %         %ylim([0 200]);
         title(['Afferent ' num2str(cur_amp_neurs(n_neur))]);
-        set(gca,'fontsize',14)
-        
+        set(gca,'fontsize',14)       
     end
     disp(sprintf('Done with Afferent %d ...',(n_neur)));
    % pause
@@ -353,6 +354,9 @@ for n_neur = 1:6
  %neuron_data(n_neur).best_fit_I(y_ord),'o-','color',col_n(n_neur,:),'linewidth',2); hold on;
 xlabel('Real I'); ylabel('Pred I')
 a(n_neur) = plot(0,400,'.','color',col_n(n_neur,:),'linewidth',2);
+
+
+squeeze(best_fit_rms_avg_std(n_neur,y_ord,:))
 end
 legend(a,{'1','2','3', '4', '5','6'}); box off;
 set(gca,'fontsize',15)
@@ -523,7 +527,7 @@ for n_u_ps = 1:length(unique_ps)
     end
 end
  
-un_ps
+%un_ps;
 unique_ps = un_ps; un_ps = [];
 for n_unique_ps = 1:length(unique_ps)
     pr_n(n_unique_ps).idxs = find(abs(unique_ps(n_unique_ps) - round(p_rate_per_block)) < 3);

@@ -37,8 +37,9 @@ else
     sim_time = input_mod_f.sim_time;
     mod_function = input_mod_f.mod_f;
     t_full = input_mod_f.mod_timing;
-    firing = input_mod_f;
+    firing = input_mod_f;   
     delay = 400; %ms
+    firing.delay = delay;
     pulse_height = curr_options;
     dt_t_full = diff(t_full(1:2));
 end
@@ -135,7 +136,7 @@ end
 
 
 function [p_times] = mod_f_t_pr(mod_function,smple_freq,t,dt, plot_steps)
-t_mod_smple = 1:(smple_freq):length(t);
+t_mod_smple = round(1:(smple_freq):length(t));
 t_lst_pulse = 0;
 p_times = [1];
 next_p_times = nan;

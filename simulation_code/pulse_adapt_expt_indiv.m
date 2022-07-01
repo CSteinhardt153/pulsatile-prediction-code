@@ -61,7 +61,7 @@ else
             
             % For do_CV_plot or pulse_adapt case
             for rep_num = 1:tot_reps
-                 rng(10) %same EPSCS
+                % rng(10) %same EPSCS
                 [spiking_info] = run_expt_on_axon_10_10_20_f(sim_info,output,change_params);
                 if ~isnan(max(spiking_info.end.spk_times))
                 spk_time_exact = zeros(1,round(max(spiking_info.end.spk_times)));

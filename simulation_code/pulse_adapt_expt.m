@@ -96,7 +96,7 @@ for n_currents = 1:length(curr_options)
     %%%%%%%% Run Simulation %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     for rep_num = 1:tot_reps
         %%%   rng(rep_num); - if want to try setting seed and comparing
-        [spiking_info] =  run_expt_on_axon_10_10_20_f(sim_info,output,change_params)
+        [spiking_info] =  run_expt_on_axon_3_3_22_f(sim_info,output,change_params)
         %single_node_KH_adapt_v1_f(sim_info,output,change_params);
         firing(n_currents).rep(rep_num).times = spiking_info.end.spk_times;
     end
@@ -173,7 +173,7 @@ for n_prs = 1:length(pulse_rate)
 spk_per_tmp = zeros(tot_reps, 3);
  for rep_num = 1:tot_reps
         %%%   rng(rep_num); - if want to try setting seed and comparing
-        [spiking_info] =  run_expt_on_axon_10_10_20_f(sim_info,output,change_params);
+        [spiking_info] =  run_expt_on_axon_3_3_22_f(sim_info,output,change_params);
         %single_node_KH_adapt_v1_f(sim_info,output,change_params);
         pr(n_prs).rep(rep_num).times = spiking_info.end.spk_times;
         spike_ts = spiking_info.end.spk_times;
