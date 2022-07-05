@@ -640,7 +640,7 @@ output.demo_pulse_mod = 0;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%% If overriding - choosing specific parameters etc:
 pulse_rate = [45:5:90];%[80 85 90 100 110 120]; %[225 250 275 300 325];%[25:25:300]; %180;%%[50 80 120 150 200];%100 150 200 250 300 ]%0:5:350;%[0 25 50 200];
-curr_options = -14.4%-13.8;%-9.36; 
+curr_options = -2.5%-14.4%-13.8;%-9.36; 
 
 addpath('/Users/cynthiasteinhardt/Dropbox/single-neuron-stim-model/vestibular-neuron-models/vest_model_pulsatile/simpler_format');
 [override] = set_overrides_v2(run_mode,output,{'pulse_rate',pulse_rate },{'curr_options',curr_options});
