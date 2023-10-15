@@ -15,17 +15,19 @@ Simply download the full repository and all functions should run with reference 
 
 ## Instructions for How to Use
 <p>The repository has three code folders which reference some helper_functions in the provided folder:<br>
-        1. prediction_code 2. simulation_code 3. figure_making_files
+        
+1. prediction_code 2. simulation_code 3. figure_making_files
 
 <p>Functions are designed to be run within the directory they are located. With directory references (’..’) at the beginning of each file.<br>
 
 **Predictions Code**
 ***
+
 _PFR_fitting_demo.m_ - uses the same technique used in the paper to fit PFRS with pulse rates up to 350 pps at difference pulse amplitudes and spontaneous rates with smooth changing in hyperparameters. _fit_pr_fr_data.m_ performs the fitting to the left out data
 
-    - I: optimize fit from set starting points (example handful guesses)
+    I: optimize fit from set starting points (example handful guesses)
         Runtime about ~110 seconds - 1 spontaneous rate condition. With fitting and plotting/printing out error. 
-    - II: performs same fitting from left out cases where there was not hand fitting to initialize x0/hyperparameters.
+    II: performs same fitting from left out cases where there was not hand fitting to initialize x0/hyperparameters.
         Interpolates between previous fits as starting parameterize for all pulse amplitudes. Runtime with no parpool ~555 seconds with carpool 140 second - 1 spontaneous rate condition. Makes interpolated and interpolated and optimized fits 
 
 
@@ -37,20 +39,17 @@ Code used to simulate vestibular afferents under a variety of pulsatile stimulat
 
 - _simulation_demo.m_ gives a basic code for changing the pulse parameter (pulse rate and pulse amplitude) and running an experiment on an afferent with given regularity for a given length of time.<br>
 
-        If run_mode = “override,” use _set_override_v2.m_ - to change any basic stimulation parameters, neuron properties, or trial timing properties.<br>
+  If run_mode = “override,” use _set_override_v2.m_ - to change any basic stimulation parameters, neuron properties, or trial timing properties.<br>
 
-- *run_chosen_expt_3_3_22.m* is references, which includes built-in experiments used in a variety of previous work and this paper. <br>
-
-    <p>Experimental paradigms are changed by changing expt_num: <br>
-
-     - expt_num = []  - case of any pulse parameter combination or DC mode (as used in previous paper) on particular afferent
+- *run_chosen_expt_3_3_22.m* is referenced, which includes built-in experiments used in a variety of previous work and this paper. Experimental paradigms are changed by changing expt_num:
+  - expt_num = []  - case of any pulse parameter combination or DC mode (as used in previous paper) on particular afferent
 Can use this mode to get spike and pulse times
-     - 1. Uses same pulse rate parameters as in Mitchell at all but expects multiple test Is. (Override can change the pulse rate and pulse amplitude anyways and override this but save out blocked firing rates per same pulse rate and pulse amplitude condition.
-     - 2. Same as 1 except set to use exact Mitchell experiment best match I-value for pulse block experiment with same pulse rate at Mitchell (2016) from Steinhardt, C. R., & Fridman, G. Y. (2020). Predicting response of spontaneously firing afferents to prosthetic pulsatile stimulation. In 2020 42nd Annual International Conference of the IEEE Engineering in Medicine & Biology Society (EMBC) (pp. 2929-2933). IEEE.
-     - 3. Designed to test any pulse rate and pulse amplitude parameter combination and run in parallel for speed
-     - 4. Same as 3 but with setting for Mitchell parameters
-     - 5. Pulse modulation experiments. Can be set for pulse amplitude modulation or pulse rate modulation. Uses the _pulse_modulator.m_ to design the base pulse modulation waveform
-     - 6. Used to try any pulse rate and amplitude combination and save out data most useful for getting PFRS and related spike timing information for this paper. Plots PA v. FR and PR v. FR plots for multiple combinations
+  - [1] Uses same pulse rate parameters as in Mitchell at all but expects multiple test Is. (Override can change the pulse rate and pulse amplitude anyways and override this but save out blocked firing rates per same pulse rate and pulse amplitude condition.
+  - [2] Same as 1 except set to use exact Mitchell experiment best match I-value for pulse block experiment with same pulse rate at Mitchell (2016) from Steinhardt, C. R., & Fridman, G. Y. (2020). Predicting response of spontaneously firing afferents to prosthetic pulsatile stimulation. In 2020 42nd Annual International Conference of the IEEE Engineering in Medicine & Biology Society (EMBC) (pp. 2929-2933). IEEE.
+  - [3] Designed to test any pulse rate and pulse amplitude parameter combination and run in parallel for speed
+  - [4] Same as 3 but with setting for Mitchell parameters
+  - [5] Pulse modulation experiments. Can be set for pulse amplitude modulation or pulse rate modulation. Uses the _pulse_modulator.m_ to design the base pulse modulation waveform
+  - [6] Used to try any pulse rate and amplitude combination and save out data most useful for getting PFRS and related spike timing information for this paper. Plots PA v. FR and PR v. FR plots for multiple combinations
 
     <p>Expts 1-4 were originally designed for Steinhardt & Fridman (2020). For any experiments not with reference to Mitchell et all (2016) expt.num = [], 3, 5, or 6 was used in this paper.<br>
 
