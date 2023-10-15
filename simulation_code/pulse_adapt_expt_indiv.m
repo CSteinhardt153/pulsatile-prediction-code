@@ -11,20 +11,22 @@ function [spiking_info,fr, avg_CV, avg_ISI] = pulse_adapt_expt_indiv(sim_info,cu
 l_pulse= length(pulse_rate);
 l_cur = length(curr_options);
 if do_parallel
-    parfor n_currents = 1:l_cur
-        n_currents
-        for n_pulses = 1:l_pulse %parfor
+    for n_pulses = 1:l_pulse %parfor
+        disp(sprintf('%d/%d',n_pulses,l_pulse))
+        for n_currents = 1:l_cur
+            
             change_params =struct();
             change_params.neuron.gNa = gNs(1);
             change_params.neuron.gKL = gNs(2);
             change_params.neuron.gKH = gNs(3);
+            change_params.full_seq = sim_info.full_seq;
             %%% for rep_num = 1:tot_reps %just for DC experiment to be parallle
             
             %Flexible place to create a stimulation paradigm to perform on
             %neuron
-            
-            disp(['Curr:' num2str(curr_options(n_currents)) ' Pulses: ' num2str(pulse_rate(n_pulses)) ])
-            
+            if mod(n_currents,10) == 0
+              disp(['Curr:' num2str(curr_options(n_currents)) ' Pulses: ' num2str(pulse_rate(n_pulses)) ])
+            end
             change_params.Inj_cur = curr_options(n_currents);
             change_params.pulse_rate = pulse_rate(n_pulses);
             
@@ -34,9 +36,9 @@ if do_parallel
                 [spiking_info] = run_expt_on_axon_10_10_20_f(sim_info,output,change_params,expt);%single_node_KH_adapt_v1_f(sim_info,output,change_params);
                 
                 %Check if spiking is from pulses or from spont spikes:
-                avg_ISI(n_currents,n_pulses,rep_num) = mean(spiking_info.end.ISI);
-                avg_CV(n_currents,n_pulses,rep_num) = spiking_info.end.CV;
-                fr(n_currents,n_pulses,rep_num) = spiking_info.fr;
+                avg_ISI(n_pulses,n_currents,rep_num) = mean(spiking_info.end.ISI);
+                avg_CV(n_pulses,n_currents,rep_num) = spiking_info.end.CV;
+                fr(n_pulses,n_currents,rep_num) = spiking_info.fr;
             end
         end
     end
@@ -86,7 +88,6 @@ else
                 avg_ISI(n_currents,n_pulses,rep_num) = mean(spiking_info.end.ISI);
                 avg_CV(n_currents,n_pulses,rep_num) = spiking_info.end.CV;
                 fr(n_currents,n_pulses,rep_num) = spiking_info.fr;
-                
                 
                 
                 %%%%% FOR PLOT OUTS:

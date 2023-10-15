@@ -15,6 +15,9 @@ else
 end
 if sim_info.isPlan
 %For Pulsatile Stimulation:
+       if change_params.full_seq %For introducing a particularly shaped pulse instead of just specifically timed pulses (added 7/22 after jitter analysis)
+           change_params.I_st = sim_info.I_st;%put the whole thing into  sim_info at the beginning - would only be in this full trace plan
+       else
         tmp_timing = (find( change_params.I_st ~=0));
         if ~isempty(tmp_timing)
             pulse_timing = tmp_timing([1 find(diff(tmp_timing) >1)]);
@@ -22,6 +25,7 @@ if sim_info.isPlan
             pulse_timing = [];
         end
         change_params.pulse_timing = pulse_timing;
+       end
 else
     I_st = zeros(1,sim_info.sim_time/dt);
     if sim_info.isDC

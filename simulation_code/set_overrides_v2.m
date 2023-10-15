@@ -11,7 +11,6 @@ function [override] = set_overrides_v2(run_mode, output,varargin)
 %Started 12/28/20
 %Last Updated 5/2/21 CRS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  
 
 if strcmp(run_mode,'override')
    %EITHER DO BY HAND HERE: 
@@ -32,6 +31,7 @@ sim_info.non_quant = 1;
 sim_info.low_cond = [0]; % Axon is low cond like Manca expt or high cond like Goldberg
 sim_info.isPlan = 0;
 sim_info.do_jitter = 0;% jitter the pulse timing to test if effects hold true
+sim_info.full_seq = 0;%control the full sequence of pulses to be specific on the exact shape of a pulse
 %Can manipulate here to try diff scenarios. If empty - chooses by what expt
 %was performed on
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

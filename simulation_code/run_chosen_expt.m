@@ -219,6 +219,7 @@ if isempty(expt.num)
     output.fr= fr;
     output.CV = avg_CV;
     output.ISI = avg_ISI;
+    output.spiking = spiking_info;
 end
 
 
@@ -250,29 +251,18 @@ if ismember(expt.num,[3 4])
     [spiking_info,fr, avg_CV, avg_ISI] = pulse_adapt_expt_indiv(sim_info,curr_options, pulse_rate, output,change_params, tot_reps,do_parallel,expt, gNs);
     toc
     
-    save_out = 0;
-    if save_out
-        cd('relev_data')
-        %'/Users/cynthiasteinhardt/Dropbox/single-neuron-stim-model/vestibular-neuron-models/vest_model_pulsatile/simpler_format/relev_data/')
-        cur_dir = '/home/fridmanlab/Steinhardt/Pulsatile_code/sim_irreg_reg'
-        save(sprintf('pr_fr_sim_rep%s_I%s-%s_PR%s-%s_S%s_reg%s_sim_wind%s_%s.mat',num2str(tot_reps),num2str(max(curr_options)*-20),num2str(min(curr_options)*-20),...
-            num2str(min(pulse_rate)),num2str(max(pulse_rate)),num2str(mean(fr(:,1))),num2str(sim_info.is_reg),num2str(sim_info.sim_time),datestr(now,'mm_dd_yyyy_HH_MM')),...
-            'fr','avg_CV','avg_ISI','sim_info','expt','curr_options','pulse_rate')
-        cd(cur_dir)
-        
-    end
+    % save_out = 0;
+    % 
+    % if save_out
+    % 
+    %     save(sprintf('pr_fr_sim_rep%s_I%s-%s_PR%s-%s_S%s_reg%s_sim_wind%s_%s.mat',num2str(tot_reps),num2str(max(curr_options)*-20),num2str(min(curr_options)*-20),...
+    %         num2str(min(pulse_rate)),num2str(max(pulse_rate)),num2str(mean(fr(:,1))),num2str(sim_info.is_reg),num2str(sim_info.sim_time),datestr(now,'mm_dd_yyyy_HH_MM')),...
+    %         'fr','avg_CV','avg_ISI','sim_info','expt','curr_options','pulse_rate')
+    %     cd(cur_dir)
+    % 
+    % end
    
 end
-
-
-% if ismember(expt.num,[5 6])
-%     %For now with expt 2 just do one example
-%     curr_options = [-8];%For pulsatile!
-%     pulse_rate = 25; %all expts are empty
-%     
-%     expt.ref_t =1;
-%     [fr, avg_CV, avg_ISI, dir_s_p_col] = sim_ps_sp_interactions(sim_info,expt,output,tot_reps, pulse_rate, curr_options,change_params)
-% end
 
 
 %%%%%%%%%%%PULSE MODULATION EXPERIMENTS Rate/amplitude
@@ -332,11 +322,6 @@ if ismember(expt.num,[5])
         linkaxes([ax1 ax2],'x')
     end
     
-    %center_time = (1e3/firing.mod_freq) + sim_info.sim_start_time; %ms
-    %Start with baseline firing rate = baseline pulse rate:
-    
-    %base_pr = mean(pulse_per_bin(1:9));
-    %[t_dif idx_cntr]=min(abs(bin_times - center_time));
     pr_vect =pulse_per_bin(use_bins);
     fr_vect = fr_per_bin(use_bins);
     time_vect = bin_times(use_bins);
@@ -388,8 +373,6 @@ if ismember(expt.num,[6])
      xlabel('pps'); ylabel('sps');
      title(['PA = ' num2str(curr_options*-20)]);
     end
-
-    
    
 end
 
@@ -456,7 +439,7 @@ if ismember(expt.num,[3 4]) %pulse_fr
         for n_amp = 1:length(curr_options)
             subplot(ceil(sqrt(length(curr_options))),ceil(sqrt(length(curr_options))),n_amp);
             hold on;
-            errorbar(pulse_rate,mean(fr(n_amp,:,:),3),std(fr(n_amp,:,:),[],3),'k'); hold on;
+            errorbar(pulse_rate,mean(fr(:,n_amp,:),3),std(fr(:,n_amp,:),[],3),'k'); hold on;
             xlabel('Pulse Rate (pps)'); ylabel('Firing Rate (sps)')
             title(num2str(curr_options(n_amp)*-20))
         end

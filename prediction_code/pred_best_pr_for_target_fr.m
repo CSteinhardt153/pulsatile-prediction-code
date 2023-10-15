@@ -8,9 +8,10 @@
 %Choose 150 uA a common current amplitude - minimize on pr to make best fr
 %(because for certain frs the same pr may max the best fr - minimal power
 %consumption and correction for bends in relationship:
-
-%addpath(genpath('/Users/cynthiasteinhardt/Dropbox/code_directories/pulsatileDir/simulation_code/'));
-
+cd('..')
+base_dir = pwd;
+data_dir = fullfile(base_dir,'relevant_data')
+%Produced Figure 5 A-D, Supplement Figure 4 ====================
 %%PM around 200 pps
 %Finding best pr to make similar fr: for the I,S combination
 S = 30; % sps
@@ -48,7 +49,6 @@ xlabel('Head  Veloctiy (degree/s)'); ylabel('Firing Rate (sps)')
 
 
 %%
-
 %Make moving firing rate trajectory:
 dt = 1e-4;                   % seconds per sample
 Fs = 1/dt; %s;%8000;                   % samples per second
@@ -73,8 +73,7 @@ fix_str = 'uA';
 %Use the solved from simulation to find best PAM:
 
 best_or_no = 0; rate_mode = 1;
-cd('/Users/cynthiasteinhardt/Dropbox/code_directories/pulsatileDir/prediction_code');
-%addpath(genpath('/Users/cynthiasteinhardt/Dropbox/code_directories/pulsatileDir'));
+
 [out] = make_input_fr_pred(mu,S,I_cur,pr,t,best_minned_stim_pr,fr_trajectory,best_or_no,rate_mode)
 %%
 expt.num = [6];
@@ -149,8 +148,7 @@ xlabel('I (uA)'); ylabel('Induced FR (sps)'); title('Mapping')
 % Interp backwards to find best fit:
 % unique_idxs = find(ismember(frs_change, unique(frs_change)));
 % q = interp1(frs_change(unique_idxs),I_range(unique_idxs),5)
-%%
- 
+
 %%
 %Make moving firing rate trajectory:
 dt = 1e-4;                   % seconds per sample
@@ -182,7 +180,6 @@ subplot(2,1,2); plot(p_trace_full);
 
 figure(10); subplot(2,1,1);plot(example_trace+ 6*rand(size(example_trace)))
 subplot(2,1,2);plot(fr_traj_full);
-
 
 [best_minned_stim_I best_minned_stim_fr] = target_fr_to_best_pr(fr_traj_full, mapped_frs,I_range,t,pr,S,fix_str);
 
@@ -218,7 +215,6 @@ end
 [override] = set_overrides_v2(run_mode,output,...
     {'curr_options',I_cur},{'mu_IPT',4},{'inj_cur',inj_cur},{'is_reg',0},{'do_jitter',0},...
     {'tot_reps',1},{'sim_start_time',150},{'epsc_scale',1},{'sim_time',firing.sim_time*1e3});
-
 
 firing.best_I = best_minned_stim_I;
 firing.goal_fr = fr_trajectory;
@@ -274,17 +270,8 @@ title(sprintf('Mapping for %s uA, S %s sps, %s',num2str(-20*I_cur),num2str(S),ca
 % % end
 % % xlabel('I'); ylabel('Firing Rate (sps)');
 % % %4 - 13, 2 - 26, 1 - 49, 0.5 - 74, .25 - 110
-
-%addpath('/Users/cynthiasteinhardt/Dropbox/single-neuron-stim-model/vestibular-neuron-models/vest_model_pulsatile/simpler_format')
-data_dir_3_axon = '/Users/cynthiasteinhardt/Dropbox/single-neuron-stim-model/vestibular-neuron-models/vest_model_pulsatile/simpler_format/useful_sim_data/3_axon_runs_4_12_21';
-
-%data_dir_facil_axon = '/Users/cynthiasteinhardt/Dropbox/single-neuron-stim-model/vestibular-neuron-models/vest_model_pulsatile/simpler_format/useful_sim_data/3_axon_runs_4_12_21/axon_1_facil_Is';
-%facil_prt = 0;
-%if facil_prt
-%    cur_dir = data_dir_facil_axon;%data_dir_3_axon; %
-%else
-    cur_dir = data_dir_3_axon; %   
-%end
+data_dir_3_axon = fullfile(data_dir,'specific_runs/3_axon_runs_4_12_21');
+cur_dir = data_dir_3_axon; %   
 
 cd(cur_dir);
 if strcmp(cur_dir,data_dir_3_axon)
@@ -330,7 +317,7 @@ fix_str = 'uA';
 [best_minned_stim_I best_minned_stim_fr] = target_fr_to_best_pr(fr_trajectory, mapped_frs,I_range,t,pr,S,fix_str);
 best_or_no = 1; rate_mode = 0;
 I_cur =  nan; % because is PAM
-cd('/Users/cynthiasteinhardt/Dropbox/code_directories/pulsatileDir/prediction_code');
+
 %addpath(genpath('/Users/cynthiasteinhardt/Dropbox/code_directories/pulsatileDir'));
 [out] = make_input_fr_pred(mu,S,I_cur,pr,t,best_minned_stim_I,fr_trajectory,best_or_no,rate_mode)
 
@@ -339,7 +326,7 @@ cd('/Users/cynthiasteinhardt/Dropbox/code_directories/pulsatileDir/prediction_co
 f_max = 350;
 f_baseline = 100;
 C = 5;% iregular 2 - regular?
-HV_i = -450:450%[0:4095];%0-2048-4095 = [-450, 0, +450]
+HV_i = -450:450;%[0:4095];%0-2048-4095 = [-450, 0, +450]
 A = atanh(2*f_baseline./f_max -1);
 fr = 0.5*f_max.*(1+tanh(A+C*((HV_i + 450)/450 - 1))); %firing rate for each head velocity
 
@@ -410,7 +397,7 @@ for n_S = 1:length(S_vals)
 end
 
 %% PAM
-col_map = flipud(winter(6));% same as in previous figures in rules of pulsatile stimulation
+col_map = flipud(winter(6));% same as in previous figures 
 S_vals = [0 13.4 30.8 55.6 84.5 131.8];
 fr_trajectory = [0 0.0001 1:.25:350];
 
@@ -432,7 +419,6 @@ for n_S = 1:length(S_vals)
 %     figure(90); plot(I_range,mapped_frs,'color',col_map(n_S,:)); hold on;
 %     xlabel('I (uA)'); ylabel('Induced FR (sps)'); title('Mapping')
 
-    
     %Make moving firing rate trajectory:                    % hertz
     figure(101);
 %     subplot(length(S_vals),3,(n_S-1)*3 +1); plot(HV_i,fr,'k'); hold on;
@@ -542,6 +528,9 @@ for n_targ_ts = 1:refresh_interv:length(fr_trajectory)
                     %plot(input_range(pair_ins(n_p,2)),mapped_frs(pair_ins(n_p,2)),'*');
                     plot(in_var,fr_trajectory(n_targ_ts),'x');
                 end
+            end
+            if isempty(poten_ins)
+                poten_ins = nan;
             end
             best_minned_stim_in(n_cnt) = (min(poten_ins));
             best_minned_stim_fr(n_cnt) = fr_trajectory(n_targ_ts);

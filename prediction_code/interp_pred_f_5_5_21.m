@@ -1,15 +1,8 @@
-function [tot_pred1 just_corr_ipi] = interp_pred_f_5_5_21(I_cur,S_cur,prs_cur)
+function [tot_pred1 ] = interp_pred_f_5_5_21(I_cur,S_cur,prs_cur)
 %INTERPOLATING ALL THE FUNCTION RELATIONSHIPS WITH CURRENT AND SPONTANEOUS
 %RATE THAT WERE OBSERVED:
-%%
-% n_Is = 45;
-% S_breaks = [1:n_Is:size(I_S_t_PS_SP,1)];
-%  figure(8); 
-%  s_map = winter(7);
-%  for n = 1:7
-%  plot(I_S_t_PS_SP(min([S_breaks(n):S_breaks(n)+n_Is],size(I_S_t_PS_SP,1)),1),I_S_t_PS_SP(min([S_breaks(n):S_breaks(n)+n_Is],size(I_S_t_PS_SP,1)),4),'.-','color',s_map(n,:)); hold on;
-%  end
-%%
+
+
 I_S_t_PS_SP = [  0  131.0000    0.0000    0.0000    1.0000    1.0000
     4.5000  131.0000    -0.0002    0.0000    1.0000    1.0000
     9.5000  131.0000    -0.0006    0.0000    1.0000    1.0000
@@ -1592,9 +1585,7 @@ pr_bend_per_S = [140 100 70 50 32 20 0 140 100 70 50 32 20 ];
             %I_shifted = I_cur*max(1,I_shift_scale_S(n_rats));
             [corr_ipi] = all_pp_block_calc(I_cur,prs_cur,S_cur,prt_elims,full_elim_drop_1,t_block, t_SP_PS );
             corr_ipi(prs_cur == 0) = 0;
-            just_corr_ipi =  corr_ipi;
             
-
             
             if  (I_cur >= 312)
                 corr_ipi = zeros(1,length(prs_cur));
@@ -1617,7 +1608,9 @@ pr_bend_per_S = [140 100 70 50 32 20 0 140 100 70 50 32 20 ];
 % % %         sprintf('F: tb %s, m_up %s, m_d %s,pt1 %s, pt2 %s, fac1 %s, fac2 %s,FE1 %s, FE2 %s, PR_b %s', ...
 % % %       num2str(pred_t_block),  num2str(pred_up_slope), num2str(pred_down_slope),...
 % % %       num2str(pred_prt_elim_1),  num2str(pred_prt_elim_2), ...
-% % %      num2str(pred_facil_slope),num2str(pred_facil_scale),num2str(FE_1),num2str(FE_2),num2str(pr_bend))     
+% % %      num2str(pred_facil_slope),num2str(pred_facil_scale),num2str(FE_1),num2str(FE_2),num2str(pr_bend))   
+% % %  
+            
             
             %SP scales Ps down Ps blocks S but that rule can be use to make S go up     
             if (I_cur <= I_switch_fac) %I_switch_facil(n_rats))
@@ -1630,12 +1623,13 @@ pr_bend_per_S = [140 100 70 50 32 20 0 140 100 70 50 32 20 ];
                 tot_pred1 = before_bend  + P_max_add.*(prs_cur >=  pr_bend)  + max(-S_cur,(down_slope + cur_m1.*prs_cur(bend_idx))).*(prs_cur >pr_bend);
                 
             end
-            
-            
+
+
+
 
 end
 
-function [corr_ipi] = all_pp_block_calc(I_cur,prs,S,prt_elims_tmp,full_elim_drop,t_block, t_SP_PS )
+function [corr_ipi] = all_pp_block_calc(I_cur,prs,S,prt_elims_tmp,full_elim_drop,t_block,   t_SP_PS )
 %t_block is the calculated t_pp (or t FR = 1*PR --> PR/2)
 %I_cur = all_cur(n_cur);
 %%%%%% FIXES:

@@ -1,0 +1,143 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% CHECK SLOPES every 25 pps:
+%% SLOPE ANALYSES FOR COMPARISON WITH EXPERIMENTAL DATA:
+%ID and compare performance
+base_dir = fullfile(pwd,'..') 
+d%/Users/cynthiasteinhardt/Dropbox/Postdoc/pulse_stim_follow_up/';
+load(fullfile(data_dir ,'data_fit_2_23_23.mat'));
+
+ perS_dat = dir(fullfile(data_dir ,'pr_fr_S*_01-15-2023.mat'))
+ load(fullfile(data_dir,perS_dat(1).name),'per_S')
+cur_dir = data_dir%;'/Users/thia/Dropbox/Postdoc/pulse_stim_follow_up';
+clear slopes_per_S
+pr_diff= 10;%%25;%%14;%12;
+pr_range= 1:pr_diff:150;
+I_range = 5:5:40;
+
+
+for n_S = 1:7
+    q= load(fullfile(cur_dir,perS_dat(n_S).name))
+    I_vals = q.per_S.I(I_range )*-20;
+    tmp = strsplit(perS_dat(n_S).name,'_01');
+    tmp2= strsplit(tmp{1},'_S');
+
+    pulse_diff= unique(diff(q.per_S.pulse_rate(pr_range)));
+    pr_dfr = q.per_S.pr_fr_dat - q.per_S.pr_fr_dat(:,:,1);
+    figure(1);subplot(1,7,n_S);
+    histogram((diff(squeeze(mean(pr_dfr(:,pr_range,I_range )))))/pulse_diff,[-2:.1:1]);
+    title(['S=' num2str(tmp2{2})])
+    slopes_per_S(n_S,:,:) = (diff(squeeze(mean(q.per_S.pr_fr_dat(:,pr_range,I_range))))/pulse_diff);
+    xlabel('Slope (sps/pps)'); xlim([-2 1])
+    set(gca,'fontsize',15)
+    S_ord(n_S) = mean(q.per_S.pr_fr_dat(:,1,1));
+end
+figure(2); histogram(slopes_per_S(:));
+xlabel('Slope (sps/pps)');
+from_code= 'I_S_fit_2_21_23.m';
+set(gca,'fontsize',15); title('Overall Slopes across Population');
+%save('slopes_per_S_7_03_23','slopes_per_S','perS_dat','I_range','pr_range','from_code','S_ord')
+
+%% B&W plot of pr v. fr/ slope
+
+use_idxs = 1:2:length(pr_range)-1;
+figure(3);
+I_cols=repmat(linspace(.65,0,length(I_vals)-1)',[1 3])% Current color map
+cent_pr= unique(diff(q.per_S.pulse_rate(pr_range(use_idxs )))/2)+ q.per_S.pulse_rate(pr_range(use_idxs ));%(q.per_S.pulse_rate(1:pr_diff:150));
+
+%I_range = 5:6:44;
+plt_ord = [1 7 3 4 5 2 6];
+for n_S = 1:7
+
+    q= load(fullfile(cur_dir,perS_dat(n_S).name));
+
+    subplot(2,7,plt_ord(n_S));
+    for n_I = 1:(length(I_vals)-1)
+         plot(q.per_S.pulse_rate,...
+        mean(q.per_S.pr_fr_dat(:,:,I_range(n_I)),1)-mean(q.per_S.pr_fr_dat(:,:,I_range(1)),1),...
+       'color',[I_cols(n_I,:) ],'markersize',13); hold on;
+
+    errorbar(q.per_S.pulse_rate(pr_range(use_idxs )),...
+        mean(q.per_S.pr_fr_dat(:,pr_range(use_idxs ),I_range(n_I)),1)-...
+        mean(q.per_S.pr_fr_dat(:,pr_range(use_idxs ),I_range(1)),1),...
+        std(q.per_S.pr_fr_dat(:,pr_range(use_idxs ),I_range(n_I)),[],1)/sqrt(10),...
+        '.','color',I_cols(n_I,:),'markersize',13); hold on;
+    end
+    set(gca,'fontsize',15); 
+    tmp = strsplit(perS_dat(n_S).name,'_01');
+    tmp2= strsplit(tmp{1},'_S');
+    ylabel('Firing Rate (sps)'); xlim([0 300])
+    box off; title(['S = ' num2str(tmp2{2})]);
+       % if n_S >= 5
+       %     ylim([-50 100])
+       % end
+    subplot(2,7,plt_ord(n_S)+7);
+    for n_I = 1:(length(I_vals)-1)
+        plot(cent_pr(1:end),squeeze(slopes_per_S(n_S,(use_idxs ),n_I)),'.-', ...
+            'color',I_cols(n_I,:),'markersize',13); hold on;
+        
+    end
+    if n_S >= 5
+        ylim([-0.75 1]); 
+    else
+    ylim([-2 1]); box off;
+    end
+    set(gca,'fontsize',15); 
+    ylabel('Slope (sps/pps)')
+    xlabel('Pulse Rate (pps)'); box off;
+    
+end
+%----------Other Plots ----------
+%% Plots with increase I:
+col_map = parula(44);
+for n_S = 1:7
+    q = load(fullfile(cur_dir,perS_dat(n_S).name))
+    s_str =strsplit(perS_dat(n_S).name,'_');
+    for n_I = 1:44
+    figure(10); 
+    subplot(1,7,n_S);plot(q.per_S.pulse_rate,mean(q.per_S.pr_fr_dat(:,:,n_I),1) -...
+        mean(q.per_S.pr_fr_dat(:,:,1),1),...
+        'color',col_map(n_I,:));hold on;
+    end
+    xlabel('Pulse Rate (pps)'); ylabel('dFiring Rate (sps)'); box off;
+    set(gca,'fontsize',15); title(['S = ' s_str{3}(2:end) ' sps'])
+    S_val(n_S) =q.per_S.S;
+    pr_fr_perS(n_S,:,:,1) = squeeze(mean(q.per_S.pr_fr_dat,1));
+    pr_fr_perS(n_S,:,:,2) = squeeze(std(q.per_S.pr_fr_dat,[],1)/sqrt(10));
+    
+end
+
+%% Plot of max PFR acheive for a given I and given PR 
+%max I val
+pr_idxs = 1:2:size(pr_fr_perS,2);
+[val max_I_idx] = max(sum(squeeze(max(pr_fr_perS(:,pr_idxs,:,1),[],2)),1));
+[val max_pr_idx] = max(sum(squeeze(max(pr_fr_perS(:,pr_idxs,:,1),[],3)),1));
+
+col_perS=winter(7);
+[sortedSs S_ord]=sort(S_val,'descend');
+for n_S = 1:7
+    n_s = S_ord(n_S);
+figure(11);
+subplot(1,2,1);
+if sortedSs(n_S) == 0
+    shadedErrorBar(q.per_S.pulse_rate(pr_idxs),squeeze(pr_fr_perS(n_s,pr_idxs,max_I_idx,1)),squeeze(pr_fr_perS(n_s,pr_idxs,max_I_idx,2)),...
+        'lineProps',{'-','color',  'k'});
+    hold on; title(sprintf('Max I %d',q.per_S.I(max_I_idx)*-20));
+    xlabel('PR (pps)'); ylabel('Firing Rate')
+    subplot(1,2,2);
+    shadedErrorBar(q.per_S.I*-20,squeeze(pr_fr_perS(n_s,max_pr_idx,:,1)),squeeze(pr_fr_perS(n_s,max_pr_idx,:,2)),...
+        'lineProps',{'-','color',  'k'}); hold on;
+     
+else
+    shadedErrorBar(q.per_S.pulse_rate(pr_idxs),squeeze(pr_fr_perS(n_s,pr_idxs,max_I_idx,1)),squeeze(pr_fr_perS(n_s,pr_idxs,max_I_idx,2)),...
+        'lineProps',{'-','color',  col_perS(n_S,:)});
+    hold on; title(sprintf('Max I %d',q.per_S.I(max_I_idx)*-20));
+    xlabel('PR (pps)'); ylabel('Firing Rate')
+    set(gca,'fontsize',15)
+    subplot(1,2,2);
+    shadedErrorBar(q.per_S.I*-20,squeeze(pr_fr_perS(n_s,max_pr_idx,:,1)),squeeze(pr_fr_perS(n_s,max_pr_idx,:,2)),...
+        'lineProps',{'-','color',  col_perS(n_S,:)}); hold on;
+    set(gca,'fontsize',15)
+end
+xlabel('I (uA)')
+title(sprintf('Max PR %d',max_pr_idx*2));
+end

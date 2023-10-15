@@ -230,8 +230,9 @@ spiking_info.fr = fr;
 %spiking_info.V = V;
 
 %disp(sprintf('CV %s',num2str(coef_var_ISI)))
-disp(sprintf('ISI %s, CV %s fr:%s',...
-    num2str(avg_ISI),num2str(coef_var_ISI),num2str(fr)))
+
+%disp(sprintf('ISI %s, CV %s fr:%s',...
+%    num2str(avg_ISI),num2str(coef_var_ISI),num2str(fr)))
 
 
 %Plot simulation in simulation timing ( look at V etc.)
