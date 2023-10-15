@@ -26,7 +26,7 @@ _PFR_fitting_demo.m_ - uses the same technique used in the paper to fit PFRS wit
     - I: optimize fit from set starting points (example handful guesses)
         Runtime about ~110 seconds - 1 spontaneous rate condition. With fitting and plotting/printing out error. 
     - II: performs same fitting from left out cases where there was not hand fitting to initialize x0/hyperparameters.
-        Interpolates between previous fits as starting parameterize for all pulse amplitudes. Runtime with no parpool ~555 seconds with carpool 140 second - 1 spontaneous rate condition. Makes interpolated and interpolated and optimized fits </li>
+        Interpolates between previous fits as starting parameterize for all pulse amplitudes. Runtime with no parpool ~555 seconds with carpool 140 second - 1 spontaneous rate condition. Makes interpolated and interpolated and optimized fits 
 
 
 <p>Based on the assumptions of the paper, code could be adapted to novel pulse rate and firing data for afferents or neurons. For best fitting, it is recommended to handfit a subset of hyperparameter at various pulse amplitudes then use the interpolation function with optimization from those best fits to find the functions that capture how pulse parameters and spontaneous activity of the afferent affect the pulse rate-firing rate relationship.<br>
@@ -44,8 +44,8 @@ Code used to simulate vestibular afferents under a variety of pulsatile stimulat
     <p>Experimental paradigms are changed by changing expt_num: <br>
 
      - expt_num = []  - case of any pulse parameter combination or DC mode (as used in previous paper) on particular afferent
-Can use this mode to get spike and pulse times</li>
-     - 1. Uses same pulse rate parameters as in Mitchell at all but expects multiple test Is. (Override can change the pulse rate and pulse amplitude anyways and override this but save out blocked firing rates per same pulse rate and pulse amplitude condition.</li>
+Can use this mode to get spike and pulse times
+     - 1. Uses same pulse rate parameters as in Mitchell at all but expects multiple test Is. (Override can change the pulse rate and pulse amplitude anyways and override this but save out blocked firing rates per same pulse rate and pulse amplitude condition.
      - 2. Same as 1 except set to use exact Mitchell experiment best match I-value for pulse block experiment with same pulse rate at Mitchell (2016) from Steinhardt, C. R., & Fridman, G. Y. (2020). Predicting response of spontaneously firing afferents to prosthetic pulsatile stimulation. In 2020 42nd Annual International Conference of the IEEE Engineering in Medicine & Biology Society (EMBC) (pp. 2929-2933). IEEE.
      - 3. Designed to test any pulse rate and pulse amplitude parameter combination and run in parallel for speed
      - 4. Same as 3 but with setting for Mitchell parameters
