@@ -1,9 +1,27 @@
 %PFR_fitting_demo.m
 %Fit data from simulations at each Spontaneous rate of afferent (S) and for
 %each pulse amplitude(I) and pulse rate(pr) combination
-%>Loads in simulation data and pre-chosend hyperparameter starting points
+%>Loads in simulation data and pre-chosen hyperparameter starting points
 %for doing optimization of predictive equations
+%>Applicable for similar situation with other neuron types when data on
+%firing rate for pulse rate, pulse amplitude, and spontaneous rate is known
+%and when goal is to characterize pulse parameter firing rate relationship.
+%>>Uses include finding equivalent rules in other neural system or
+%adding this code to neural implants using pulses as a correction.
 
+% Copyright 2023 Cynthia Steinhardt
+%
+% Licensed under the Apache License, Version 2.0 (the "License");
+% you may not use this file except in compliance with the License.
+% You may obtain a copy of the License at
+%
+% http://www.apache.org/licenses/LICENSE-2.0
+%
+% Unless required by applicable law or agreed to in writing, software
+% distributed under the License is distributed on an "AS IS" BASIS,
+% WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+% See the License for the specific language governing permissions and
+% limitations under the License.
 %==========================================================
 cd('..')
 base_dir = pwd;
@@ -165,7 +183,7 @@ for n_S = 1%:size(s_fits,1) %f = 1:length(file_names)
 end
  
 
-%% II: Fiiting/ Prediction on all the different amplitudes left out and not:
+%% II: Fitting/ Prediction on all the different amplitudes left out and not:
 tic
 for n_S = 1:7
 

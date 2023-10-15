@@ -1,8 +1,27 @@
 function [tot_pred1 ] = interp_pred_f_5_5_21(I_cur,S_cur,prs_cur)
 %INTERPOLATING ALL THE FUNCTION RELATIONSHIPS WITH CURRENT AND SPONTANEOUS
 %RATE THAT WERE OBSERVED:
-
-
+%>Simplified linear rule fitting euqations that are less biophysical than
+%those described in the main test but easier to fit through basic
+%optimization algorithms
+%>Can be equivalently used for predicting pulse parameter firing rate
+%relationships for other vestibular afferents, other neurons, and uses in
+%correcting neural implant pulsatile stimulation algorithms
+%
+% Copyright 2023 Cynthia Steinhardt
+%
+% Licensed under the Apache License, Version 2.0 (the "License");
+% you may not use this file except in compliance with the License.
+% You may obtain a copy of the License at
+%
+% http://www.apache.org/licenses/LICENSE-2.0
+%
+% Unless required by applicable law or agreed to in writing, software
+% distributed under the License is distributed on an "AS IS" BASIS,
+% WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+% See the License for the specific language governing permissions and
+% limitations under the License.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 I_S_t_PS_SP = [  0  131.0000    0.0000    0.0000    1.0000    1.0000
     4.5000  131.0000    -0.0002    0.0000    1.0000    1.0000
     9.5000  131.0000    -0.0006    0.0000    1.0000    1.0000
