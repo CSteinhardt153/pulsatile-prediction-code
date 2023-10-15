@@ -63,19 +63,19 @@ For details of how the afferent EPSC activity and channels are run, as found in 
 This code is labeled throughout with “Figure X X” with reference to figures in text and supplemental figures sections. Files use data from relevant_data folder throughout.
 
 *main_fig_plotter.m*  
-I. uses a variety of saved runs under different conditions to produce traces with individual PFRs and fit
+- I. uses a variety of saved runs under different conditions to produce traces with individual PFRs and fit
 -under different spontaneous rate, jitter condition, varied firing regularity, low/medium/high I trace visualization, fitting comparisons, histogram of spike timing analysis.
-II. Demos a subset of the experiments described in I and contains code for visualizing outcome of these experiments.
-III. Code for visualizing the pulse trains, membrane potentials, and channel dynamics traces under different conditions and other codes used through Figures 1-5 unrelated to the slope analyses or the experimental data.
+- II. Demos a subset of the experiments described in I and contains code for visualizing outcome of these experiments.
+- III. Code for visualizing the pulse trains, membrane potentials, and channel dynamics traces under different conditions and other codes used through Figures 1-5 unrelated to the slope analyses or the experimental data.
 
 <p>*sim_slope_analysis.m* - uses the saved session runs to perform the slope and statistical analyses described in the test on simulated data under described conditions<br>
 
 <p> 
 *ephys_data_analysis_to_slope_n_metrics.m* 
-I. Takes the spike timing of recorded data in mitchell_data_all and transforms it into firing rates per block per simulation conditions. 
-II. Then this data is used to visualize PFRS and get slopes per spontaneous rate, pulse amplitude and pulse rate condition. 
-III. Permutation analysis and statistics are performed here against the simulation slope data produced in sim_slope_analysis.m 
-IV. Parameter visualization from the fits and rms error and statistics of the fits are performed in PFR_fitting_demo.m
+- I. Takes the spike timing of recorded data in mitchell_data_all and transforms it into firing rates per block per simulation conditions. 
+- II. Then this data is used to visualize PFRS and get slopes per spontaneous rate, pulse amplitude and pulse rate condition. 
+- III. Permutation analysis and statistics are performed here against the simulation slope data produced in sim_slope_analysis.m 
+- IV. Parameter visualization from the fits and rms error and statistics of the fits are performed in PFR_fitting_demo.m
 <br>
   
 **Relevant Data**
