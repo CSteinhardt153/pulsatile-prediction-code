@@ -220,28 +220,33 @@ for n_S = 1:7
         perS_slope(n_S).slopes2 = [perS_slope(n_S).slopes2 aff(n_amp_rec).amp_resp(:).fr_slope_per_points];
     end
 end
-
+%%
 %================ Supplemental Figure 3 C ==========================
 figure(9);
 plt_cnt =1;
 
-hist_range = -1:0.05:1;
+bw= 0.1; %0.05
+hist_range = -1:bw:1;
 for n_S = 1:7
     all_slope_S = [perS_slope(n_S).slopes2 perS_slope(n_S).slopes];
     if ~isempty(all_slope_S)
         tmp = squeeze(slopes_per_S(n_S,:,:));
         sim_per_s = tmp(:);
-        [p1 x1]= hist(all_slope_S,hist_range ); hold on;%,5:1:15); hold on;
-        [p2 x2] = hist(sim_per_s,hist_range );%,5:1:15)
+        %[p1 x1]= hist(all_slope_S,hist_range ); hold on;%,5:1:15); hold on;
+        %[p2 x2] = hist(sim_per_s,hist_range );%,5:1:15)
         subplot(1,4,plt_cnt);
 %         plot(x1,p1/sum(p1),'k','linewidth',2); hold on;
 %         plot(x2,p2/sum(p2),'r','linewidth',2)
-        histogram(all_slope_S,hist_range, 'Normalization', 'probability','FaceColor','k'); hold on;
-        histogram(sim_per_s,hist_range, 'Normalization', 'probability','FaceColor','r'); 
+        l=histogram(all_slope_S,hist_range, 'Normalization', 'probability','FaceColor','k'); hold on;
+        h=histogram(sim_per_s,hist_range, 'Normalization', 'probability','FaceColor','r'); 
+        l.EdgeColor  ='None'; h.EdgeColor='None';
         [h_smir p_smir] = kstest2(sim_per_s,all_slope_S');
         WS_Dist_cur =Wasserstein_Dist(sim_per_s,all_slope_S');
         p_smir_per_S(n_S) = p_smir;
         WS_Dist_cur_per_S(n_S) = WS_Dist_cur;
+
+        [h,p_t,~,stats] = ttest2(sim_per_s,all_slope_S,"Tail","both");
+        disp([p_t,stats.df,stats.tstat])
         legend(sprintf('Experimental (n=%d)',length(all_slope_S)), ...
             sprintf('Simulated (n=%d)',length(sim_per_s)));%,'Simulated with N(0,0.2) Noise');
         box off;
@@ -253,8 +258,9 @@ for n_S = 1:7
     perm_counter(n_S) = length( all_slope_S); %How many slopes belonged to each S value
 end
 
-%OVERALL:
 
+%%
+%OVERALL:
 expt_dist = [all_amp_slope all_sing_slope];
 sim_dist = slopes_per_S(:);
 [h p_ks2_overall] = kstest2(expt_dist,sim_dist)
@@ -263,6 +269,7 @@ WS_Dist_overall = Wasserstein_Dist(expt_dist',sim_dist')
 [p1 x1]= hist(expt_dist,hist_range ); hold on;%,5:1:15); hold on;
 [p2 x2] = hist(sim_dist,hist_range );%,5:1:15)
 
+[h,p,~,stats] = ttest2(expt_dist,sim_dist,"Tail","both");
 %==================== Figure 4 E ======================%
 figure(10); 
 histogram(expt_dist,hist_range, 'Normalization', 'probability','FaceColor','k'); hold on;
@@ -270,7 +277,7 @@ histogram(sim_dist, hist_range, 'Normalization', 'probability','FaceColor','r');
 legend(sprintf('Experimental (n=%d)',length(expt_dist)), ...
     sprintf('Simulated (n=%d)',length(sim_dist)));%,'Simulated with N(0,0.2) Noise');
 set(gca,'fontsize',15); xlabel('Slope (sps/pps)'); ylabel(''); box off
- title(sprintf('S %0.2f, p = %0.3f,W=%0.3f', S_val_sim(n_S),p_ks2_overall, WS_Dist_overall))
+ title(sprintf(' p = %0.3f,W=%0.3f', p_ks2_overall, WS_Dist_overall))
 %%
 %Instead of perming slopes
 %all_slopes_all_categories = [perS_slope.slopes perS_slope.slopes2];
@@ -375,12 +382,15 @@ i_cols = parula(9);
 [a re_ord]=sort(sim_info.S_ord);
 
 %% Lower vs. higher PR under diff S and diff I:
-%============= Supplemental Figure 3 D =============================
+%============= Supplemental Figure 3 C =============================
 thresh_pr = 150;
 split_prs = ((slope_cnt_pr*2) < thresh_pr);
 %Spont Rate, prs, I levels
 rel_simulated_lowpr = squeeze(sim_info.slopes_per_S(re_ord(2:5),split_prs,1:size(sim_info.slopes_per_S,3)));
 rel_simulated_highpr = squeeze(sim_info.slopes_per_S(re_ord(2:5),~split_prs,1:size(sim_info.slopes_per_S,3)));
+
+xticklabels(sampled_Is)
+%% Do per I statistics/power testing:-----
 figure(200)
 for n_rate = 1:size(rel_simulated_lowpr,1)
     subplot(4,1,n_rate);
@@ -393,8 +403,7 @@ for n_rate = 1:size(rel_simulated_lowpr,1)
     title(sprintf('S %0.2f',a(n_rate+1)));
     ylim([-1 1.2])
 end
-xticklabels(sampled_Is)
-%% Do per I statistics/power testing:-----
+
 for n_slevel = 1:size(sim_info.slopes_per_S,1)
         for n_Is = 1:size(sim_info.slopes_per_S,3)
             
@@ -407,17 +416,17 @@ for n_slevel = 1:size(sim_info.slopes_per_S,1)
             std_1 = std(pop_1);
             n_per_test = min(length(pop_1),length(pop_2));
 
-            if (std_1 ~=0) & (std_2~=0)
-                nout = sampsizepwr('t',[mu_1 std_1],mu_2,0.95,[],'Tail','both');
-                power = sampsizepwr('t',[mu_1 std_1],mu_2,[],n_per_test,'Tail','both');
-            else
-                nout = nan;power = nan;
-            end
+            % if (std_1 ~=0) & (std_2~=0)
+            %     nout = sampsizepwr('t',[mu_1 std_1],mu_2,0.90,[],'Tail','both');
+            %     power = sampsizepwr('t',[mu_1 std_1],mu_2,[],n_per_test,'Tail','both');
+            % else
+            %     nout = nan;power = nan;
+            % end
 
             [h,p,~,stats] = ttest2(pop_1,pop_2,"Tail","both");
-            disp(sprintf('N needed %d, power %0.3f',nout,power));
-            stat_power_per_sim(n_slevel).I_level(n_Is).pow = power;
-            stat_power_per_sim(n_slevel).I_level(n_Is).n_samples = nout;
+            % disp(sprintf('N needed %d, power %0.3f',nout,power));
+            % stat_power_per_sim(n_slevel).I_level(n_Is).pow = power;
+            % stat_power_per_sim(n_slevel).I_level(n_Is).n_samples = nout;
             stat_power_per_sim(n_slevel).I_level(n_Is).stats = stats;
             stat_power_per_sim(n_slevel).I_level(n_Is).p_val = p;
 
@@ -513,7 +522,7 @@ for n = 1:2
             pop_2 = squeeze(S_exps(n).combined(n_aff,check_tests(n_Is),~(split_prs)));
             pop_2 = pop_2(~isnan(pop_2));
 
-                nout = sampsizepwr('t',[mu_1 std_1],mu_2,0.95,[],'Tail','both');
+                nout = sampsizepwr('t',[mu_1 std_1],mu_2,0.90,[],'Tail','both');
                 power = sampsizepwr('t',[mu_1 std_1],mu_2,[],n_per_test,'Tail','both');
 
             [h,p,~,stats] = ttest2(pop_1,pop_2,"Tail","both");
@@ -551,13 +560,14 @@ for n = 1:2
 end
 
 %% Cross all afferents but high amplitude:
-
 %Ignoring the 5 case because don't have at multiple amplitudes? so only 4
 %afferents
 idx_s_sing = unique([sing_resp_S_bin amp_resp_S_bin]);
 idx_s_sing = idx_s_sing(2:end);
+clear S_max
 S_max(n_ss).slopes_low = [];
 S_max(n_ss).slopes_high = [];
+%N = 9 traces
 for n_ss = 1:length(idx_s_sing)
     rel_multi_I = find(amp_resp_S_bin == idx_s_sing(n_ss));
     sing_I = find(sing_resp_S_bin == idx_s_sing(n_ss)); %only have for single I so maybe not so helpful? this is why the 5 sps not in most of analyses
@@ -566,7 +576,7 @@ for n_ss = 1:length(idx_s_sing)
         %organize into same prs:
         [a idx_imax]=max([aff(rel_multi_I(n)).amp_resp.I]);
         all_prs =  aff(rel_multi_I(n)).amp_resp(idx_imax).pr_centers;
-        split_pr = all_prs <thresh_pr;
+        split_pr = all_prs < thresh_pr;
         %resp_w_pr = nan(length(aff(rel_multi_I(n)).amp_resp),length(all_prs));
         %S_exps(n_ss).aff(n).slopes = resp_w_pr;
         %for nI = 1:length(aff(rel_multi_I(n)).amp_resp)
@@ -589,11 +599,310 @@ for n_ss = 1:length(idx_s_sing)
             sing_resp(sing_I(n_s)).fr_slope_per_points(sing_resp(sing_I(n_s)).pr_centers < thresh_pr)];
        S_max(n_ss).slopes_high = [S_max(n_ss).slopes_high ...
             sing_resp(sing_I(n_s)).fr_slope_per_points(sing_resp(sing_I(n_s)).pr_centers >= thresh_pr)];
+       S_max(n_ss).I_per(n_sofar+n_s) = nan;
+    end
 
+end 
+%% CROSS EVERY TRACE
+idx_s_sing = unique([sing_resp_S_bin amp_resp_S_bin]);
+idx_s_sing = idx_s_sing(2:end);
+clear S_all
+S_all(n_ss).slopes_low = [];
+S_all(n_ss).slopes_high = [];
+for n_ss = 1:length(idx_s_sing)
+    S_all(n_ss).I_per = [];
+    rel_multi_I = find(amp_resp_S_bin == idx_s_sing(n_ss));
+    sing_I = find(sing_resp_S_bin == idx_s_sing(n_ss)); %only have for single I so maybe not so helpful? this is why the 5 sps not in most of analyses
+    S_all(n_ss).base_fr_grp = S_val_sim(idx_s_sing(n_ss));
+    for n = 1:length(rel_multi_I)
+        %organize into same prs:
+        [a idx_imax]=max([aff(rel_multi_I(n)).amp_resp.I]);
+        for n_Is = 1:length(aff(rel_multi_I(n)).amp_resp)
+            all_prs =  aff(rel_multi_I(n)).amp_resp(n_Is).pr_centers;
+            split_pr = all_prs < thresh_pr;
+            %resp_w_pr = nan(length(aff(rel_multi_I(n)).amp_resp),length(all_prs));
+            %S_exps(n_ss).aff(n).slopes = resp_w_pr;
+            %for nI = 1:length(aff(rel_multi_I(n)).amp_resp)
+                
+                S_all(n_ss).slopes_low = [S_all(n_ss).slopes_low ...
+                aff(rel_multi_I(n)).amp_resp(n_Is).fr_slope_per_points(split_pr)];
+    
+                S_all(n_ss).slopes_high = [S_all(n_ss).slopes_high ...
+                aff(rel_multi_I(n)).amp_resp(n_Is).fr_slope_per_points(~split_pr)];
+    
+                S_all(n_ss).I_per = [S_all(n_ss).I_per aff(rel_multi_I(n)).amp_resp(n_Is).I];
+                %S_exps(n_ss).aff(n).prs = all_prs;%aff(rel_multi_I(n)).amp_resp(nI).pr_centers;
+            %end
+        end
+    end
+    %Can include here as well if want to (the single high amplitude only- but don't have details on I):
+      n_sofar= length(rel_multi_I);%length(S_exps(n_ss).aff);
+    for n_s = 1:length(sing_I)
+
+       S_all(n_ss).slopes_low = [S_all(n_ss).slopes_low ...
+            sing_resp(sing_I(n_s)).fr_slope_per_points(sing_resp(sing_I(n_s)).pr_centers < thresh_pr)];
+       S_all(n_ss).slopes_high = [S_all(n_ss).slopes_high ...
+            sing_resp(sing_I(n_s)).fr_slope_per_points(sing_resp(sing_I(n_s)).pr_centers >= thresh_pr)];
+       S_all(n_ss).I_per = [S_all(n_ss).I_per nan];
     end
 
 end
+
+%% High-low split per I
+idx_s_sing = unique([sing_resp_S_bin amp_resp_S_bin]);
+idx_s_sing = idx_s_sing(2:end);
+clear S_lI S_hI %max
+n_ss= 3;
+S_lI(n_ss).slopes_low = [];
+S_lI(n_ss).slopes_high = [];
+S_hI(n_ss).slopes_low = [];
+S_hI(n_ss).slopes_high = [];
+%All traces
+for n_ss = 1:length(idx_s_sing)
+    rel_multi_I = find(amp_resp_S_bin == idx_s_sing(n_ss));
+    sing_I = find(sing_resp_S_bin == idx_s_sing(n_ss)); %only have for single I so maybe not so helpful? this is why the 5 sps not in most of analyses
+    S_lhI(n_ss).base_fr_grp = S_val_sim(idx_s_sing(n_ss));
+    n_trace_LH = [1 1];
+    for n = 1:length(rel_multi_I)
+        %organize into same prs:
+      
+        
+        %resp_w_pr = nan(length(aff(rel_multi_I(n)).amp_resp),length(all_prs));
+        %S_exps(n_ss).aff(n).slopes = resp_w_pr;
+        for nI = 1:length(aff(rel_multi_I(n)).amp_resp)
+            all_prs =  aff(rel_multi_I(n)).amp_resp(nI).pr_centers;
+            split_pr = all_prs < thresh_pr;
+            split_pr_auc = aff(rel_multi_I(n)).amp_resp(nI).pr_per < thresh_pr;
+
+            %Mid_point  
+            mid_val = interp1(aff(rel_multi_I(n)).amp_resp(nI).pr_per, aff(rel_multi_I(n)).amp_resp(nI).fr_per,thresh_pr);
+
+            slopes_low = aff(rel_multi_I(n)).amp_resp(nI).fr_slope_per_points(split_pr);
+            slopes_high =  aff(rel_multi_I(n)).amp_resp(nI).fr_slope_per_points(~split_pr);
+            
+            %trapezoidal integration
+            AUC_low = trapz([aff(rel_multi_I(n)).amp_resp(nI).pr_per(split_pr_auc) thresh_pr],...
+            [aff(rel_multi_I(n)).amp_resp(nI).fr_per(split_pr_auc) mid_val])/...
+            (thresh_pr - min(aff(rel_multi_I(n)).amp_resp(nI).pr_per(split_pr_auc)));
+
+            AUC_high = trapz([thresh_pr aff(rel_multi_I(n)).amp_resp(nI).pr_per(~split_pr_auc)],...
+            [mid_val aff(rel_multi_I(n)).amp_resp(nI).fr_per(~split_pr_auc)])/...
+            (max(aff(rel_multi_I(n)).amp_resp(nI).pr_per(~split_pr_auc)) - thresh_pr);
+
+
+            if aff(rel_multi_I(n)).amp_resp(nI).I/max([aff(rel_multi_I(n)).amp_resp.I]) <=0.5
+                 S_lI(n_ss).slopes_low = [S_lI(n_ss).slopes_low slopes_low];
+                 S_lI(n_ss).slopes_high = [S_lI(n_ss).slopes_high slopes_high];
+                 S_lI(n_ss).AUC_low(n_trace_LH(1)) = AUC_low;
+                 S_lI(n_ss).AUC_high(n_trace_LH(1)) = AUC_high;
+                 S_lI(n_ss).I_per(n_trace_LH(1)) = aff(rel_multi_I(n)).amp_resp(nI).I;
+                 n_trace_LH(1) =n_trace_LH(1) +1;
+            else
+                 S_hI(n_ss).slopes_low = [S_hI(n_ss).slopes_low slopes_low];
+                 S_hI(n_ss).slopes_high = [S_hI(n_ss).slopes_high slopes_high];
+                 %should i pred at 150 to do this properly and then do area
+                 %until there on both sides.. proably
+                 S_hI(n_ss).AUC_low(n_trace_LH(2)) = AUC_low;
+                 S_hI(n_ss).AUC_high(n_trace_LH(2)) = AUC_high;
+                 S_hI(n_ss).I_per(n_trace_LH(2)) = aff(rel_multi_I(n)).amp_resp(nI).I;
+                 n_trace_LH(2) =n_trace_LH(2) +1;
+            end
+                       
+
+        end
+    end
+    %Can include here as well if want to (the single high amplitude only- but don't have details on I):
+    
+    for n_s = 1:length(sing_I)
+
+       split_pr = (sing_resp(sing_I(n_s)).pr_centers < thresh_pr);
+       split_pr_auc = (sing_resp(sing_I(n_s)).pr_per < thresh_pr);
+
+       %Mid_point  
+       mid_val = interp1(sing_resp(sing_I(n_s)).pr_per, sing_resp(sing_I(n_s)).fr_per,thresh_pr);
+
+       S_hI(n_ss).slopes_low = [S_hI(n_ss).slopes_low ...
+            sing_resp(sing_I(n_s)).fr_slope_per_points(sing_resp(sing_I(n_s)).pr_centers < thresh_pr)];
+       S_hI(n_ss).slopes_high = [S_hI(n_ss).slopes_high ...
+            sing_resp(sing_I(n_s)).fr_slope_per_points(sing_resp(sing_I(n_s)).pr_centers >= thresh_pr)];
+       S_hI(n_ss).I_per(n_trace_LH(2)) = nan;
+       S_hI(n_ss).AUC_low(n_trace_LH(2)) = trapz([sing_resp(sing_I(n_s)).pr_per(split_pr_auc) thresh_pr],...
+           [sing_resp(sing_I(n_s)).fr_per(split_pr_auc) mid_val])/(thresh_pr-min(sing_resp(sing_I(n_s)).pr_per(split_pr_auc)));
+       S_hI(n_ss).AUC_high(n_trace_LH(2)) = trapz([thresh_pr sing_resp(sing_I(n_s)).pr_per(~split_pr_auc)],...
+           [mid_val sing_resp(sing_I(n_s)).fr_per(~split_pr_auc)])/(max(sing_resp(sing_I(n_s)).pr_per(~split_pr_auc))-thresh_pr);
+       n_trace_LH(2) =n_trace_LH(2) +1;
+    end
+
+end 
+
+%% Plot Results:
+%slope with increasing I
+n_bins = 10;%[];
+bw= 0.1;
+figure(8); subplot(2,2,1);
+[ttest_outs]  = comp_plots([S_lI.slopes_low],[S_lI.slopes_high],n_bins,bw)
+title('Low I');xlabel('slope');
+legend(sprintf('Low R (n=%d)',length([S_lI.slopes_low])),...
+    sprintf('High R (n=%d)',length([S_lI.slopes_high])))
+
+
+subplot(2,2,2);
+[ttest_outs]  = comp_plots([S_hI.slopes_low],[S_hI.slopes_high],n_bins,bw);
+title('High I');xlabel('slope');
+legend(sprintf('Low R (n=%d)',length([S_hI.slopes_low])),...
+    sprintf('High R (n=%d)',length([S_hI.slopes_high])))
+
+%AUC:
+bw=9;
+subplot(2,2,3);
+[ttest_outs]  = comp_plots([S_lI.AUC_low],[S_hI.AUC_low],n_bins,bw);
+legend(sprintf('Low I (n=%d)',length([S_lI.AUC_low])),...
+    sprintf('High I (n=%d)',length([S_hI.AUC_low])))
+title('Low R');xlabel('AUC')
+
+subplot(2,2,4)
+[ttest_outs]  = comp_plots([S_lI.AUC_high],[S_hI.AUC_high],n_bins,bw);
+legend(sprintf('Low I (n=%d)',length([S_lI.AUC_high])),...
+    sprintf('High I (n=%d)',length([S_hI.AUC_high])))
+title('High R');xlabel('AUC')
+
+%% Violin plots
+%Slope(sps/pps)
+%Current comparison:
+%Mean is the line and median is the dot
+figure(90);
+grouporder={'LowI LowR','High R','HighI Low R','High R'};
+position = 'left';
+C=[1 .7 0;.7 0 1];
+% Germany histogram
+vs = Violin({[S_lI.slopes_low]},1,...
+    'QuartileStyle','shadow',... % boxplot, none
+    'DataStyle', 'scatter',... % scatter, histogram
+    'ShowMean',true,...
+    'ShowMedian',true,...
+    "HalfViolin","left",...
+    "ViolinColor",{C(1,:)});
+
+vs = Violin({[S_lI.slopes_high]},1,...
+    'QuartileStyle','shadow',... % boxplot, none
+    'DataStyle', 'scatter',... % scatter, histogram
+    'ShowMean',true,...
+    'ShowMedian',true,...
+    "HalfViolin","right",...
+    "ViolinColor",{C(2,:)});
+
+
+vs = Violin({[S_hI.slopes_low]},2,...
+    'QuartileStyle','shadow',... % boxplot, none
+    'DataStyle', 'scatter',... % scatter, histogram
+    'ShowMean',true,...
+    "HalfViolin","left",...
+    "ViolinColor",{C(1,:)});
+
+vs = Violin({[S_hI.slopes_high]},2,...
+    'QuartileStyle','shadow',... % boxplot, none
+    'DataStyle', 'scatter',... % scatter, histogram
+    'ShowMean',true,...
+    "HalfViolin","right",...
+    "ViolinColor",{C(2,:)});
+xticks([.8,1.2 1.8 2.2]);
+set(gca,xticklabels=grouporder)
+set(gca,'fontsize',14)
+
+[h,p,~,stats] = ttest2([S_lI.slopes_low],[S_lI.slopes_high],"Tail","both");
+disp(sprintf('p=%0.3f,t(%d)=%0.3f',p, stats.df, stats.tstat ))
+[h,p,~,stats] = ttest2([S_hI.slopes_low],[S_hI.slopes_high],"Tail","both");
+disp(sprintf('p=%0.3f,t(%d)=%0.3f',p, stats.df, stats.tstat ))
+[h,p,~,stats] = ttest2([S_lI.slopes_low],[S_hI.slopes_low],"Tail","both");
+disp(sprintf('p=%0.3f,t(%d)=%0.3f',p, stats.df, stats.tstat ))
+[h,p,~,stats] = ttest2([S_lI.slopes_high],[S_hI.slopes_high],"Tail","both");
+disp(sprintf('p=%0.3f,t(%d)=%0.3f',p, stats.df, stats.tstat ))
+
+% ======= AUC plots
+figure(91);
+grouporder={'LowI LowR','High R','HighI Low R','High R'};
+position = 'left';
+C=[.7 0 0;0 0 .7];
+ylabel('Normd. AUC (sps*pps)')
+% Germany histogram
+vs = Violin({[S_lI.AUC_low]},1,...
+    'QuartileStyle','shadow',... % boxplot, none
+    'DataStyle', 'scatter',... % scatter, histogram
+    'ShowMean',true,...
+    'ShowMedian',true,...
+    "HalfViolin","left",...
+    "ViolinColor",{C(1,:)});
+
+vs = Violin({[S_lI.AUC_high]},1,...
+    'QuartileStyle','shadow',... % boxplot, none
+    'DataStyle', 'scatter',... % scatter, histogram
+    'ShowMean',true,...
+    'ShowMedian',true,...
+    "HalfViolin","right",...
+    "ViolinColor",{C(2,:)});
+
+vs = Violin({[S_hI.AUC_low]},2,...
+    'QuartileStyle','shadow',... % boxplot, none
+    'DataStyle', 'scatter',... % scatter, histogram
+    'ShowMean',true,...
+    "HalfViolin","left",...
+    "ViolinColor",{C(1,:)});
+
+vs = Violin({[S_hI.AUC_high]},2,...
+    'QuartileStyle','shadow',... % boxplot, none
+    'DataStyle', 'scatter',... % scatter, histogram
+    'ShowMean',true,...
+    "HalfViolin","right",...
+    "ViolinColor",{C(2,:)});
+xticks([.8,1.2 1.8 2.2]);
+set(gca,xticklabels=grouporder)
+set(gca,'fontsize',14)
+
+
+[h,p,~,stats] = ttest2([S_lI.AUC_low],[S_lI.AUC_high],"Tail","both");
+disp(sprintf('p=%0.3f,t(%d)=%0.3f',p, stats.df, stats.tstat ))
+[h,p,~,stats] = ttest2([S_hI.AUC_low],[S_hI.AUC_high],"Tail","both");
+disp(sprintf('p=%0.3f,t(%d)=%0.3f',p, stats.df, stats.tstat ))
+[h,p,~,stats] = ttest2([S_lI.AUC_low],[S_hI.AUC_low],"Tail","both");
+disp(sprintf('p=%0.3f,t(%d)=%0.3f',p, stats.df, stats.tstat ))
+[h,p,~,stats] = ttest2([S_lI.AUC_high],[S_hI.AUC_high],"Tail","both");
+disp(sprintf('p=%0.3f,t(%d)=%0.3f',p, stats.df, stats.tstat ))
+%% Bar graph versions:
+figure(13);
+subplot(1,4,1);
+bar([1,2],[mean([S_lI.slopes_low]) mean([S_lI.slopes_high])]); hold on;
+errorbar([1,2],[mean([S_lI.slopes_low]) mean([S_lI.slopes_high])], ...
+    [std([S_lI.slopes_low]) std([S_lI.slopes_high])]./...
+    sqrt([length([S_lI.slopes_low]) length([S_lI.slopes_high])]),'k.')
+xticks([1,2]); box off;
+ylim([-.1 .4]);ylabel('Slope (sps/pps)')
+xticklabels({'Low R','High R'}); title('Low I')
+subplot(1,4,2);
+bar([1,2],[mean([S_hI.slopes_low]) mean([S_hI.slopes_high])]); hold on;
+errorbar([1,2],[mean([S_hI.slopes_low]) mean([S_hI.slopes_high])],...
+[std([S_hI.slopes_low]) std([S_hI.slopes_high])]./...
+    sqrt([length([S_hI.slopes_low]) length([S_hI.slopes_high])]),'k.')
+xticks([1,2]);box off;
+xticklabels({'Low R','High R'}); title('High I')
+ylim([-.1 .4])
+subplot(1,4,3); ylabel('AUC')
+bar([1,2],[mean([S_lI.AUC_low]) mean([S_hI.AUC_low])]); hold on;
+errorbar([1,2],[mean([S_lI.AUC_low]) mean([S_hI.AUC_low])],...
+[std([S_lI.AUC_low]) std([S_hI.AUC_low])]./...
+    sqrt([length([S_lI.AUC_low]) length([S_hI.AUC_low])]),'k.')
+xticks([1,2]);box off;
+ylim([0 80])
+xticklabels({'Low I','High I'}); title('Low R')
+subplot(1,4,4);
+bar([1,2],[mean([S_lI.AUC_high]) mean([S_hI.AUC_high])]); hold on;
+errorbar([1,2],[mean([S_lI.AUC_high]) mean([S_hI.AUC_high])],...
+[std([S_lI.AUC_high]) std([S_hI.AUC_high])]./...
+    sqrt([length([S_lI.AUC_high]) length([S_hI.AUC_high])]),'k.')
+xticks([1,2])
+xticklabels({'Low I','High I'}); title('High R')
+ylim([0 80]);box off; 
 %% High-low split per S Value
+
 %%Plotting across group:
 avg_l =[mean(S_max(1).slopes_low) mean(S_max(2).slopes_low) mean(S_max(3).slopes_low)]
 std_l =[std(S_max(1).slopes_low) std(S_max(2).slopes_low) std(S_max(3).slopes_low)]./...
@@ -616,22 +925,43 @@ nout = sampsizepwr('t',[mean([S_max.slopes_low]) std([S_max.slopes_low])],mean([
 power = sampsizepwr('t',[mean([S_max.slopes_low]) std([S_max.slopes_low])],mean([S_max.slopes_high]),[],min(length([S_max.slopes_high]),length([S_max.slopes_low])),'Tail','both');
 [h,p,~,stats] = ttest2([S_max.slopes_low],[S_max.slopes_high],"Tail","both")
 xticklabels({'Low PR','High PR'}); ylabel('Slope (sps/pps)')
-%%
- figure(3);
-hl = histogram([S_max.slopes_low],[-.5:.1:1.1]); hold on;
-pl= histcounts([S_max.slopes_low],[-.5:.1:1.1],'normalization','pdf');
-hh = histogram([S_max.slopes_high],[-.5:.1:1.1]);
-ph= histcounts([S_max.slopes_high],[-.5:.1:1.1],'normalization','pdf');
-
-binCenters_l = hl.BinEdges + (hl.BinWidth/2);
-binCenters_h = hh.BinEdges + (hh.BinWidth/2);
 %% ======================= Figure 4 F =============================
-figure(4);
-pl= histogram([S_max.slopes_low],[-.5:.1:1.1],'normalization','pdf'); hold on;
-ph= histogram([S_max.slopes_high],[-.5:.1:1.1],'normalization','pdf');
-xlabel('(sps/pps)'); ylabel('Occurance')
+ figure(3);
+ C=[1 .7 0;.7 0 1];
+vs = Violin({[S_max.slopes_low]},1,...
+    'QuartileStyle','shadow',... % boxplot, none
+    'DataStyle', 'scatter',... % scatter, histogram
+    'ShowMean',true,...
+    "HalfViolin","left",...
+    "ViolinColor",{C(1,:)});
+vs = Violin({[S_max.slopes_high]},1,...
+    'QuartileStyle','shadow',... % boxplot, none
+    'DataStyle', 'scatter',... % scatter, histogram
+    'ShowMean',true,...
+    'ShowMedian',true,...
+    "HalfViolin","right",...
+    "ViolinColor",{C(2,:)});
 
+% figure(4);
+% pl= histogram([S_max.slopes_low],[-.5:.1:1.1],'normalization','pdf'); hold on;
+% ph= histogram([S_max.slopes_high],[-.5:.1:1.1],'normalization','pdf');
+ylabel('Slope (sps/pps)'); 
 Wasserstein_Dist([S_max.slopes_low]',[S_max.slopes_high])';
+[h p_ks_lh] = kstest2([S_max.slopes_low],[S_max.slopes_high])
+xticks([0.8 1.2]);
+xticklabels({'Low R','High R'})
+%% Combining ALL slope from all I amplitudes and single trials:
+
+all_prs =  aff(rel_multi_I(n)).amp_resp(idx_imax).pr_centers;
+        split_pr = all_prs < thresh_pr;
+            
+S_max(n_ss).slopes_low = [S_max(n_ss).slopes_low ...
+aff(rel_multi_I(n)).amp_resp(idx_imax).fr_slope_per_points(split_pr)];
+
+S_max(n_ss).slopes_high = [S_max(n_ss).slopes_high ...
+aff(rel_multi_I(n)).amp_resp(idx_imax).fr_slope_per_points(~split_pr)];
+
+S_max(n_ss).I_per(n) = aff(rel_multi_I(n)).amp_resp(idx_imax).I;
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -863,7 +1193,27 @@ end
 %end
 end
 
-
+function [y,t] = trace_hist(x)
+t= linspace(min(x),max(x),1000);
+[y,t]= ssvkernel(x,t);
+if sum(y) ~= 1
+    y= y/max(y);
+end
+end
+%Plotting for histograms of comparison on real data ====
+function [ttest_outs]  = comp_plots(x1,x2,n_bins,bw)
+l=histogram(x1,n_bins,'binwidth',bw,'normalization','probability'); hold on;
+h = histogram(x2,n_bins,'binwidth',bw,'normalization','probability');
+h.EdgeColor = 'none';l.EdgeColor = 'none';
+[y1,t1]=trace_hist(x1);[y2,t2] = trace_hist(x2);
+plot(t1,y1*1.2*max(l.Values),'b','linewidth',2); plot(t2,y2*1.2*max(h.Values),'r','linewidth',2)
+box off;
+[h,p,~,stats] = ttest2(x1,x2,"Tail","both");
+ttest_outs = [p stats.df stats.tstat ];
+disp(sprintf('p=%0.3f,t(%d)=%0.3f',ttest_outs));
+set(gca,'fontsize',14); box off;
+end
+%=====
 
 function [coeff] =best_fit_line(prs,dfrs)
 coeff = fitlm(prs,dfrs,'Intercept',false);

@@ -10,7 +10,11 @@
 %consumption and correction for bends in relationship:
 cd('..')
 base_dir = pwd;
-data_dir = fullfile(base_dir,'relevant_data')
+addpath(fullfile(base_dir,'prediction_code'))
+addpath(fullfile(base_dir,'simulation_code'))
+addpath(fullfile(base_dir,'helper_functions'))
+data_dir = fullfile(base_dir,'relevant_data');
+
 %Produced Figure 5 A-D, Supplement Figure 4 ====================
 %%PM around 200 pps
 %Finding best pr to make similar fr: for the I,S combination
@@ -24,7 +28,7 @@ mapped_frs = frs_change + S;
 f_max = 350;
 f_baseline = 100;
 C = 5;% iregular 2 - regular?
-HV_i = -450:450%[0:4095];%0-2048-4095 = [-450, 0, +450]
+HV_i = -450:450; %[0:4095];%0-2048-4095 = [-450, 0, +450]
 A = atanh(2*f_baseline./f_max -1);
 use_PR = 0.5*f_max.*(1+tanh(A+C*((HV_i + 450)/450 - 1))); %firing rate for each head velocity
 
@@ -34,10 +38,11 @@ for n_HV =1:length(HV_i)
    [ a idx]= min(abs(use_PR(n_HV)-pr_range));
    fr_seq(n_HV) =mapped_frs(idx);
 end
+fr= use_PR ; % original PR mapping and the natural observed fr
 figure(1); subplot(1,2,1); plot(pr_range,mapped_frs,'k');box off;
 ylabel('Firing Rate (sps)')
 xlabel('Pulse Rate (pps)'); title(['I = ' num2str(I_cur)])
-subplot(1,2,2);plot(HV_i,fr,'k'); hold on; 
+subplot(1,2,2);plot(HV_i,fr,'k'); hold on; %ideal fr
 plot(HV_i,fr_seq,'m'); box off;
 plot(HV_i(1:max(find(fr < 110))),fr(1:max(find(fr < 110))),'b'); hold on;
 plot([HV_i(max(find(fr < 110))) 500], [fr(max(find(fr < 110))) fr(max(find(fr < 110)))],'b')
@@ -48,11 +53,15 @@ xlabel('Head  Veloctiy (degree/s)'); ylabel('Firing Rate (sps)')
 % xlabel('Firing Rate (sps)'); ylabel('Head Velocity (degrees)')
 
 
-%%
-%Make moving firing rate trajectory:
+%% Make moving firing rate trajectory: PAM
+S = 30; % sps
+I_cur = 250; %uA
+pr_range = 0:.05:450;%0:.25:450;
+[frs_change] = interp_pred_f_5_5_21(I_cur,S,pr_range);
+mapped_frs = frs_change + S;
+
 dt = 1e-4;                   % seconds per sample
 Fs = 1/dt; %s;%8000;                   % samples per second
-
 StopTime = 1.5;             % seconds
 t = (0:dt:StopTime-dt)';     % seconds
 %%Sine wave:
@@ -69,13 +78,11 @@ fr_trajectory = 50*sin(2*pi*Fc*t)+55;%80*sin(2*pi*Fc*t)+120;
 fix_val = I_cur; fix_str = ' pps';
 [best_minned_stim_pr best_minned_stim_fr] = target_fr_to_best_pr(fr_trajectory, mapped_frs,pr_range,t,fix_val,S,fix_str);
 
+
+%% Simulate response to determined PRM/PAM
+
 fix_str = 'uA';
-%Use the solved from simulation to find best PAM:
 
-best_or_no = 0; rate_mode = 1;
-
-[out] = make_input_fr_pred(mu,S,I_cur,pr,t,best_minned_stim_pr,fr_trajectory,best_or_no,rate_mode)
-%%
 expt.num = [6];
 run_mode = 'override';%  {'exact','override'}; %can run the exact experiment from study, override some parameters, or do a new experiment
 %%% If choose override skip to line 109 to edit otherwise select experiment
@@ -111,7 +118,7 @@ end
 firing.best_pr = best_minned_stim_pr;
 firing.goal_fr = fr_trajectory;
 
-firing.mod_f = firing.best_pr%fr_trajectory;%
+firing.mod_f = firing.best_pr;%fr_trajectory;%
 
 firing.goal_fr_t = t;
 %For sine: firing.pm_mod_amp*sin(firing.mod_freq*2*pi*t_full)+firing.pm_base;
@@ -129,6 +136,8 @@ override.output.vis_plots = 0; %check pulses over time
 override.tot_reps = 10;%10;
 out = run_chosen_expt(expt,run_mode,override,output);
 title(sprintf('Mapping for %s uA, S %s sps',num2str(-20*I_cur),num2str(S)));
+%%%%%
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -138,6 +147,11 @@ I_range = 0:.5:350;%150; %uA
 pr = 300;%% %0:.05:450;%0:.25:450
 fix_str = ' pps';
 frs_change = [];
+
+%Use the solved from simulation to find best PAM:
+best_or_no = 0; rate_mode = 1;mu = 2; %S = 30;
+[out] = make_input_fr_pred(mu,S,I_cur,pr,t,best_minned_stim_pr,fr_trajectory,best_or_no,rate_mode);
+
 for n_I = 1:length(I_range)
 [frs_change(n_I)] = interp_pred_f_5_5_21(I_range(n_I),S,pr);
 end
@@ -149,7 +163,9 @@ xlabel('I (uA)'); ylabel('Induced FR (sps)'); title('Mapping')
 % unique_idxs = find(ismember(frs_change, unique(frs_change)));
 % q = interp1(frs_change(unique_idxs),I_range(unique_idxs),5)
 
-%%
+%% PAM example prediction
+pr = 300;%% %0:.05:450;%0:.25:450
+I_range = 0:.5:350;%150; %uA
 %Make moving firing rate trajectory:
 dt = 1e-4;                   % seconds per sample
 Fs = 1/dt; %s;%8000;                   % samples per second
@@ -654,6 +670,7 @@ expt.num = [6];
 run_mode = 'override';%  {'exact','override'}; %can run the exact experiment from study, override some parameters, or do a new experiment
 %%% If choose override skip to line 109 to edit otherwise select experiment
 
+output.vis_plots = 1; %show PRM?
 output.vis_plots = 0; %If want to see the afferent model APs without experiments
 output.vis_plot_num = 6; %plot number when visualizing
 output.label_aps = 0; %This is meaningless if don't set the seed, etc. - for check if AP spont or pulse induced

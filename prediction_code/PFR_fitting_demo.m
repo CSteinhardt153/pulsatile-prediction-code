@@ -50,7 +50,7 @@ perS_dat = perS_dat(ord_S_idx);
  %I: Fitting subset of simulated data per case where hyperparameters
  %initialized with handfit estimates of best guesses.
 
-for n_S = 1%:size(s_fits,1) %f = 1:length(file_names)
+for n_S = 1:size(s_fits,1) %f = 1:length(file_names)
 
     load(fullfile(data_dir,perS_dat(n_S).name),'per_S','rel_files');
     S = mean(per_S.pr_fr_dat(:,1,1))

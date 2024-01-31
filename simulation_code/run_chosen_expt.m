@@ -270,7 +270,7 @@ if ismember(expt.num,[5])
     
     %If is [] then will build a mod function in the pulse_modulator function
     %   mod_function  = override.firing.mod_f;
-    plot_it = 0;
+    plot_it = 1;
     bin_hlf_wdth = 30;
     if override.rate_mode % Modulating Amplitude (0) Rate = (1)
         curr_options = override.firing.pa_base/-20;
@@ -353,7 +353,7 @@ if ismember(expt.num,[6])
     rng(2)
     do_parallel = 1; % fast run and save out data
     if do_parallel 
-        output.vis_plots = 0; 
+        output.vis_plot = 0; 
     end
     
     gNs = [gNas, gKLs, gKHs];
@@ -363,15 +363,15 @@ if ismember(expt.num,[6])
     
     %Check pa-fr
     if length(curr_options) > length(pulse_rate)
-    %figure;
+    figure(10);
     shadedErrorBar(curr_options*-20,squeeze(mean(fr,3)),squeeze(std(fr,[],3)));
     xlabel('uA'); ylabel('sps');
-    title(['PR = ' num2str(pulse_rate)]);
+    title(['PAM result, PR = ' num2str(pulse_rate)]);
     else
-    %figure;
+    figure(10);
     shadedErrorBar(pulse_rate,squeeze(mean(fr,3)),squeeze(std(fr,[],3)));
      xlabel('pps'); ylabel('sps');
-     title(['PA = ' num2str(curr_options*-20)]);
+     title(['PRM result, PA = ' num2str(curr_options*-20)]);
     end
    
 end
