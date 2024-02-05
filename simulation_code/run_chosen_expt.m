@@ -129,7 +129,7 @@ sim_info.isDC = 0;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%Pulse Adapt/firing rate Experiments
 if ismember(expt.num,[1:4])
-    
+    tot_reps = sim_info.tot_reps;
     pulse_rate =[0 25 50 75 100 175 200 300]; % pulses per second (from A)
     
     %Closest match to Mitchell et al paper results
@@ -147,6 +147,7 @@ if ismember(expt.num,[1:4])
     end
     
     if ismember(expt.num,[1 2]) %pulse_adapt
+        
         sim_info.isPlan = 1; % set pulse blocks over time
     else
         tot_reps = 10;

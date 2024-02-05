@@ -21,7 +21,7 @@
 % See the License for the specific language governing permissions and
 % limitations under the License.
 %=========================================================================
-expt.num = []; %could be [[],1 - 6]
+expt.num = [];%[]; %could be [[],1 - 6]
 run_mode = 'override';%  {'exact','override'}; %can run the exact experiment from study, override some parameters, or do a new experiment
 %%% If choose override skip to line 39 to edit otherwise select experiment
 
@@ -47,11 +47,12 @@ output.demo_pulse_mod = 0;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%% If overriding - choosing specific parameters etc:
-pulse_rates = [25:25:300]; %pps
-I_targ = 80;%uA
+pulse_rates = 4;%[50 150 250];%1;%[25:25:300]; %pps
+I_targ = 20;%uA
 I_norm = -20; %normalization factor
 use_curs = I_targ/I_norm;
-[override] = set_overrides_v2(run_mode,output,{'pulse_rate',pulse_rates},{'curr_options',use_curs},{'tot_reps', 1},{'mu_IPT',1},{'sim_time',1150});
+[override] = set_overrides_v2(run_mode,output,{'pulse_rate',pulse_rates},...
+    {'curr_options',use_curs},{'tot_reps', 1},{'mu_IPT',.5},{'sim_time',1150});
 
 %Example code runs experiment at pulse rates 25 to 300 at I = 48 uA for
 %1150 ms with a neuron with mu = 1 (low spontaneous firing rate ~30) in a
