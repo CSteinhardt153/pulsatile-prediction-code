@@ -7,7 +7,7 @@
 
 <p>Besides the code provided, the only requirements are built-in MATLAB optimization algorithms that are used to perform optimization of hyper parameter tuning in the prediction code.<br>
 
-<p> This code is under the Apache License 2.0. See the LICENSE.txt for details. The main feature of compliance for academic purposes would be citing this paper when using this code for other applications.
+<p> This code is under the BSD 3 License and patented by The Johns Hopkins University. The main feature of compliance for academic purposes would be citing this paper when using this code for other applications.
 
 ## System Requirements
 <p>This code should run in a recent version of MATLAB on Mac, Windows, or Linux with the code and data in these packaged and the standard toolboxes, including Optimization Toolbox.<br>
