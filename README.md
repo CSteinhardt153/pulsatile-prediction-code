@@ -13,7 +13,11 @@
 <p>This code should run in a recent version of MATLAB on Mac, Windows, or Linux with the code and data in these packaged and the standard toolboxes, including Optimization Toolbox.<br>
 
 ## Installation Guide
-Simply download the full repository and all functions should run with reference to data in the relevant_data folder. 
+Simply download the full repository and all functions should run with reference to data in the relevant_data folder. Installation should take less than a minute on a standard computer.
+
+Use the code:
+    
+    git clone https://github.com/CSteinhardt153/pulsatileDir.git
 
 ## Instructions for How to Use
 <p>The repository has three code folders which reference some helper_functions in the provided folder:<br>
