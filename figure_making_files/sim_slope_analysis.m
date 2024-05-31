@@ -49,11 +49,16 @@ cent_pr= unique(diff(q.per_S.pulse_rate(pr_range(use_idxs )))/2)+ q.per_S.pulse_
 
 %I_range = 5:6:44;
 plt_ord = [1 7 3 4 5 2 6];
+
+sim_data = []
 for n_S = 1:7
 
     q= load(fullfile(cur_dir,perS_dat(n_S).name));
 
     subplot(2,7,plt_ord(n_S));
+    tmp = strsplit(perS_dat(n_S).name,'_01');
+    tmp2= strsplit(tmp{1},'_S');
+
     for n_I = 1:(length(I_vals)-1)
         plot(q.per_S.pulse_rate,...
             mean(q.per_S.pr_fr_dat(:,:,I_range(n_I)),1)-mean(q.per_S.pr_fr_dat(:,:,I_range(1)),1),...
@@ -64,10 +69,16 @@ for n_S = 1:7
             mean(q.per_S.pr_fr_dat(:,pr_range(use_idxs ),I_range(1)),1),...
             std(q.per_S.pr_fr_dat(:,pr_range(use_idxs ),I_range(n_I)),[],1)/sqrt(10),...
             '.','color',I_cols(n_I,:),'markersize',13); hold on;
+    
+        tmp_sim = [repmat([str2num(tmp2{2}), I_range(n_I)],size(q.per_S.pulse_rate(pr_range(use_idxs ))')),...
+            q.per_S.pulse_rate(pr_range(use_idxs ))',...
+            (mean(q.per_S.pr_fr_dat(:,pr_range(use_idxs ),I_range(n_I)),1)-...
+            mean(q.per_S.pr_fr_dat(:,pr_range(use_idxs ),I_range(1)),1))',...
+            std(q.per_S.pr_fr_dat(:,pr_range(use_idxs ),I_range(n_I)),[],1)'/sqrt(10)]
+        sim_data = vertcat(sim_data,tmp_sim);
     end
     set(gca,'fontsize',15);
-    tmp = strsplit(perS_dat(n_S).name,'_01');
-    tmp2= strsplit(tmp{1},'_S');
+    
     ylabel('Firing Rate (sps)'); xlim([0 300])
     box off; title(['S = ' num2str(tmp2{2})]);
     % if n_S >= 5

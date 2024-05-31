@@ -166,11 +166,52 @@ out = run_chosen_expt(expt,run_mode,override,output);
 title(sprintf('Mapping for %s uA, S %s sps',num2str(-20*I_cur),num2str(S)));
 %%%%%
 
+%%
+%% PRM 150 uA
+trace_info = []
+for S = [13]%13 31] %11; % sps
+I_range = 250; %uA
+pr = 0:.05:450;%0:.25:450
+fix_str = ' uA';
+frs_change = [];
+
+%Use the solved from simulation to find best PAM:
+%best_or_no = 0; rate_mode = 1;mu = 2; %S = 30;
+%[out] = make_input_fr_pred(mu,S,I_cur,pr,t,best_minned_stim_pr,fr_trajectory,best_or_no,rate_mode);
+
+
+[frs_change] = interp_pred_f_5_5_21(I_range,S,pr);
+
+% Show mapping and find best input sequence for it:
+mapped_frs = frs_change + S;
+figure(90); plot(pr,mapped_frs); hold on;
+xlabel('PR (pps)'); ylabel('Induced FR (sps)'); title('Mapping')
+
+% % Interp backwards to find best fit:
+% unique_idxs = find(ismember(frs_change, unique(frs_change)));
+% q = interp1(frs_change(unique_idxs),I_range(unique_idxs),5)
+
+%Make moving firing rate trajectory:
+dt = 1e-4;%4;                   % seconds per sample
+Fs = 1/dt; %s;%8000;                   % samples per second
+% 
+StopTime = .5;             % seconds
+t = (0:dt:StopTime-dt)';     % seconds
+%%Sine wave:
+Fc = 4;                     % hertz
+fr_trajectory = 60*sin(2*pi*Fc*t)+60;% 60*sin(2*pi*4*t)+60;%
+%fr_trajectory = 150 + 25*sin(2*pi*8*t) + 15*sin(2*pi*2.5*t + pi/5)+ 5*sin(2*pi*8*t + pi/3); 
+%
+[best_minned_stim_I best_minned_stim_fr] = target_fr_to_best_pr(fr_trajectory, mapped_frs,pr,t,I_range,S,fix_str);
+
+trace_info = vertcat(trace_info,[fr_trajectory best_minned_stim_I' best_minned_stim_fr' repmat(S,size(best_minned_stim_fr'))])
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% PAM around 300 pps
-S = 11; % sps
+trace_info = []
+for S = [13 31] %11; % sps
 I_range = 0:.5:350;%150; %uA
 pr = 300;%% %0:.05:450;%0:.25:450
 fix_str = ' pps';
@@ -191,11 +232,11 @@ xlabel('I (uA)'); ylabel('Induced FR (sps)'); title('Mapping')
 % unique_idxs = find(ismember(frs_change, unique(frs_change)));
 % q = interp1(frs_change(unique_idxs),I_range(unique_idxs),5)
 
-%% PAM example prediction
+% PAM example prediction
 pr = 300;%% %0:.05:450;%0:.25:450
 I_range = 0:.5:350;%150; %uA
 %Make moving firing rate trajectory:
-dt = 1e-4;                   % seconds per sample
+dt = 1e-3;%4;                   % seconds per sample
 Fs = 1/dt; %s;%8000;                   % samples per second
 
 StopTime = 2;             % seconds
@@ -206,6 +247,8 @@ fr_trajectory = 50*sin(2*pi*Fc*t)+50;
 fr_trajectory = 50 + 25*sin(2*pi*Fc*t) + 15*sin(2*pi*2.5*t + pi/5)+ 5*sin(2*pi*8*t + pi/3);
 [best_minned_stim_I best_minned_stim_fr] = target_fr_to_best_pr(fr_trajectory, mapped_frs,I_range,t,pr,S,fix_str);
 
+trace_info = vertcat(trace_info,[fr_trajectory best_minned_stim_I' best_minned_stim_fr' repmat(S,size(best_minned_stim_fr'))])
+end
 %% Speech data set example fr: 2/14/22
 example_trace = [20 20 20 22 25 23 20 20 20 20 20 20 20 20 130 110 100 115 126 110 115 123 118 110  100 90 70 68 65 60 57 55 50 52 43 40 40 32 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30 30  30 30 30 30 30 30 30 30 30 30 30 30 30 40 50 55 60 80 73 70 68  75 68 65 62 60 58 57 55 57 58 60];
 fin_trace = 1.4*(example_trace+ 7*rand(size(example_trace)));
@@ -225,6 +268,9 @@ subplot(2,1,2); plot(p_trace_full);
 figure(10); subplot(2,1,1);plot(example_trace+ 6*rand(size(example_trace)))
 subplot(2,1,2);plot(fr_traj_full);
 
+[best_minned_stim_I best_minned_stim_fr] = target_fr_to_best_pr(fr_traj_full, mapped_frs,I_range,t,pr,S,fix_str);
+
+%%
 [best_minned_stim_I best_minned_stim_fr] = target_fr_to_best_pr(fr_traj_full, mapped_frs,I_range,t,pr,S,fix_str);
 
 %Previously used for pr (pulse rate) only now using for pr or pa.
@@ -390,10 +436,13 @@ fr_t_HV = @(fr_i) 450*(1+ ((atanh((fr_i/(.5*f_max)) - 1) - A)/C)) - 450;
 %%
 col_map = winter(7);% same as in previous figures in rules of pulsatile stimulation
 S_vals = [0 13.4 30.8 55.6 84.5 131.8];
-fr_trajectory = [0 0.0001 1:.25:350];
+fr_trajectory = [0 1:350];%0.0001 1:.25:350];
 
+best_fr_pr = [];
 figure(100);
 alpha = 0.5;
+
+
 for n_S = 1:length(S_vals)
 %     subplot(length(S_vals),3,(n_S-1)*3 +1); plot(HV_i,fr,'k'); hold on;
 %     subplot(length(S_vals),3,(n_S-1)*3 +2); plot(fr_trajectory, fr_trajectory,'k--'); hold on;
@@ -403,6 +452,7 @@ for n_S = 1:length(S_vals)
    subplot(1,3,2); plot(fr_trajectory, fr_trajectory,'k--'); hold on;
    subplot(1,3,3);  plot(fr_trajectory, fr_trajectory,'k--'); hold on;
     
+  
     S = S_vals(n_S);%0; % sps
     I_cur = 150; %uA
     pr_range = 0:.01:450;%0:.25:450
@@ -438,16 +488,20 @@ for n_S = 1:length(S_vals)
     xlabel('Best Pulse Rate (pps)');ylabel('Best Firing Rate Reconstruction (sps)')
     ylim([0 350]);
      box off;
+
+      best_fr_pr = vertcat(best_fr_pr,[fr_trajectory' best_minned_stim_pr' best_minned_stim_fr' fr_t_HV(best_minned_stim_fr)', repmat(S_vals(n_S),[length(best_minned_stim_fr) 1])]);
 end
 
 %% PAM
 col_map = flipud(winter(6));% same as in previous figures 
 S_vals = [0 13.4 30.8 55.6 84.5 131.8];
-fr_trajectory = [0 0.0001 1:.25:350];
+fr_trajectory = [0 1:350];%0.0001 1:.25:350];
 
 alpha = 0.5;
 I_range = 0.1:.1:350;%150; %uA
 pr = 250;%% %0:.05:450;%0:.25:450
+
+best_fr_pr = [];
 
 for n_S = 1:length(S_vals)
 
@@ -498,6 +552,9 @@ for n_S = 1:length(S_vals)
     xlabel('Target Firing Rate (pps)');ylabel('Best Firing Rate Reconstruction (sps)')
     ylim([0 350]);
      box off;
+
+        best_fr_pr = vertcat(best_fr_pr,[fr_trajectory' best_minned_stim_pr' best_minned_stim_fr' fr_t_HV(best_minned_stim_fr)', repmat(S_vals(n_S),[length(best_minned_stim_fr) 1])]);
+
 end
 
 
@@ -630,7 +687,7 @@ if plot_it
     % xlim([550 1300]*1e-3)
 end
 
-do_vid =1;
+do_vid =0;
 if do_vid
 newVid = VideoWriter('speech_conversion_2_14_22_fr_pulse', 'MPEG-4');
 %VideoWriter('vid_corr_pr_fr_11_11_21', 'MPEG-4'); % New

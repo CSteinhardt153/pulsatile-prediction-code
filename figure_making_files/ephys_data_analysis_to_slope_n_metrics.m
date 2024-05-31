@@ -7,9 +7,9 @@
 %%%%%% "state" of neuron influencing level of bends
 %%%%%% Slope calculations and stastic metrics versus the simulated data.
 
-%Last Updated 10.14.23 CRS
+%Last Updatd 10.14.23 CRS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-cd('..');
+%cd('..');
 base_dir = pwd;
 data_dir = fullfile(base_dir,'relevant_data');
 expt_data_dir = fullfile(data_dir,'mitchell_data_all');
@@ -90,6 +90,14 @@ all_sing_slope = [sing_resp.fr_slope_per_points];
 %================= Supplemental Figure 2 A/ Figure 4 D ================
 n_aff = [1 3:6]; n_fig = 2; line_col = 'k';%last indicates iterating variable
 plot_pfr_slopes(n_aff,sing_resp,n_fig,line_col,[2,5],[],[]) %Made general function - below for plotting these
+%% Getting slope info
+indiv_resps = [];
+for n_aff = [1 3:6]
+    indiv_resp = [sing_resp(n_aff).pr_per',  vertcat(sing_resp(n_aff).base_fr,sing_resp(n_aff).fin_nums.fr),...
+        [nan nan;sing_resp(n_aff).fin_nums.dfr],repmat(n_aff,size(sing_resp(n_aff).pr_per'))];
+    indiv_resps =vertcat(indiv_resps,indiv_resp);
+end
+indiv_resps
 
 
 %% DIFF AMP PER AFFERENT:
@@ -186,6 +194,22 @@ edges = [-1:.1:1];
 % xlabel('Slope (sps/pps)'); ylabel('Number of Sampled Firing Rates')
 % set(gca,'fontsize',15)
 
+
+%% Combine all aff data:
+
+%% Getting slope info
+indiv_resps = [];
+for n_aff = all_af
+    sing_resp =  aff(n_aff).amp_resp;
+    for n_Is = 1:length(sing_resp)
+    
+    indiv_resp = [sing_resp(n_Is).pr_per',  vertcat(sing_resp(n_Is).base_fr,...
+        sing_resp(n_Is).fin_nums.fr),...
+        [nan nan;sing_resp(n_Is).fin_nums.dfr],repmat(sing_resp(n_Is).I, size(sing_resp(n_Is).pr_per')),repmat(n_aff,size(sing_resp(n_Is).pr_per'))];
+    indiv_resps =vertcat(indiv_resps,indiv_resp);
+    end
+end
+indiv_resps
 %% LOADING IN SIMULATED DATA
 
 %COMPARE WITH SIMULATION
@@ -221,7 +245,7 @@ for n_S = 1:7
     end
 end
 %%
-%================ Supplemental Figure 3 C ==========================
+%================ Supplemental Figure 5 C ==========================
 figure(9);
 plt_cnt =1;
 
@@ -258,7 +282,12 @@ for n_S = 1:7
     perm_counter(n_S) = length( all_slope_S); %How many slopes belonged to each S value
 end
 
-
+%%
+all_slope_S = []
+for n_S = 1:7
+    slopes =[perS_slope(n_S).slopes2 perS_slope(n_S).slopes]';
+    all_slope_S = vertcat(all_slope_S,[slopes repmat(S_val_sim(n_S),size(slopes))])
+end
 %%
 %OVERALL:
 expt_dist = [all_amp_slope all_sing_slope];
@@ -740,7 +769,7 @@ end
 n_bins = 10;%[];
 bw= 0.1;
 figure(8); subplot(2,2,1);
-[ttest_outs]  = comp_plots([S_lI.slopes_low],[S_lI.slopes_high],n_bins,bw)
+[ttest_outs]  = comp_plots([S_lI.slopes_low],[S_lI.slopes_high],n_bins,bw);
 title('Low I');xlabel('slope');
 legend(sprintf('Low R (n=%d)',length([S_lI.slopes_low])),...
     sprintf('High R (n=%d)',length([S_lI.slopes_high])))
@@ -809,14 +838,16 @@ xticks([.8,1.2 1.8 2.2]);
 set(gca,xticklabels=grouporder)
 set(gca,'fontsize',14)
 
+%%
+disp('Slopes')
 [h,p,~,stats] = ttest2([S_lI.slopes_low],[S_lI.slopes_high],"Tail","both");
-disp(sprintf('p=%0.3f,t(%d)=%0.3f',p, stats.df, stats.tstat ))
+disp(sprintf('t(%d)=%0.2f, p=%0.2f',stats.df, stats.tstat,p ))
 [h,p,~,stats] = ttest2([S_hI.slopes_low],[S_hI.slopes_high],"Tail","both");
-disp(sprintf('p=%0.3f,t(%d)=%0.3f',p, stats.df, stats.tstat ))
+disp(sprintf('t(%d)=%0.2f, p=%0.2f',stats.df, stats.tstat,p  ))
 [h,p,~,stats] = ttest2([S_lI.slopes_low],[S_hI.slopes_low],"Tail","both");
-disp(sprintf('p=%0.3f,t(%d)=%0.3f',p, stats.df, stats.tstat ))
+disp(sprintf('t(%d)=%0.2f, p=%0.2f',stats.df, stats.tstat,p  ))
 [h,p,~,stats] = ttest2([S_lI.slopes_high],[S_hI.slopes_high],"Tail","both");
-disp(sprintf('p=%0.3f,t(%d)=%0.3f',p, stats.df, stats.tstat ))
+disp(sprintf('t(%d)=%0.2f, p=%0.2f',stats.df, stats.tstat,p  ))
 
 % ======= AUC plots
 figure(91);
@@ -858,15 +889,16 @@ xticks([.8,1.2 1.8 2.2]);
 set(gca,xticklabels=grouporder)
 set(gca,'fontsize',14)
 
+disp('AUCs')
 
 [h,p,~,stats] = ttest2([S_lI.AUC_low],[S_lI.AUC_high],"Tail","both");
-disp(sprintf('p=%0.3f,t(%d)=%0.3f',p, stats.df, stats.tstat ))
+disp(sprintf('t(%d)=%0.2f, p=%0.2f',stats.df, stats.tstat,p  ))
 [h,p,~,stats] = ttest2([S_hI.AUC_low],[S_hI.AUC_high],"Tail","both");
-disp(sprintf('p=%0.3f,t(%d)=%0.3f',p, stats.df, stats.tstat ))
+disp(sprintf('t(%d)=%0.2f, p=%0.2f',stats.df, stats.tstat,p ))
 [h,p,~,stats] = ttest2([S_lI.AUC_low],[S_hI.AUC_low],"Tail","both");
-disp(sprintf('p=%0.3f,t(%d)=%0.3f',p, stats.df, stats.tstat ))
+disp(sprintf('t(%d)=%0.2f, p=%0.2f',stats.df, stats.tstat,p  ))
 [h,p,~,stats] = ttest2([S_lI.AUC_high],[S_hI.AUC_high],"Tail","both");
-disp(sprintf('p=%0.3f,t(%d)=%0.3f',p, stats.df, stats.tstat ))
+disp(sprintf('t(%d)=%0.2f, p=%0.2f',stats.df, stats.tstat,p  ))
 %% Bar graph versions:
 figure(13);
 subplot(1,4,1);

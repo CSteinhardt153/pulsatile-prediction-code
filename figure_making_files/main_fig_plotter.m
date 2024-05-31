@@ -133,6 +133,32 @@ end
 xlabel('Pulse Rate (pps)'); ylabel('Firing Rate (sps)');
 set(gca,'fontsize',14); box off;
 
+%%
+%% Visualizing specific runs for showing example PFRS and traces in Figures 2 - 3
+%Figure 2: Pulse interactions with no Spont Activity in detail: =====================================
+data_dir_higher_axon = fullfile(data_dir,'specific_runs','3_axon_runs_4_12_21/axon_1_dS_PR_FR_data');
+data_dir_facil_axon = fullfile(data_dir,'specific_runs','3_axon_runs_4_12_21/axon_1_facil_Is');
+
+low_I = load(fullfile(data_dir_facil_axon,'pr_fr_sim_I0-90_PR0-350_MInf_S0_R3_04_17_2021_18_02.mat'));
+higher_I = load(fullfile(data_dir_higher_axon ,'pr_fr_sim_I0-360_PR0-350_MInf_S0_R5_04_10_2021_09_17.mat'))'
+
+S0_curr_range = [low_I.curr_options*-20 higher_I.curr_options(9:end)*-20];
+S0_frs = [mean(low_I.fr,3);mean(higher_I.fr(9:end,:,:),3)];
+S0_frs_std = [std(low_I.fr,[],3);std(higher_I.fr(9:end,:,:),[],3)];
+figure(4);
+
+I_S_PR_FR = []
+%Figure 2B
+for n_S0_curs = [14:22]%11:14%14:22%length(S0_curr_range)
+    plot(low_I.pulse_rate,S0_frs(n_S0_curs,:),'-'); hold on;%hold on',  col_s0(25-cnt,:),'linewidth',2); hold on;
+   shadedErrorBar(low_I.pulse_rate,S0_frs(n_S0_curs,:),S0_frs_std(n_S0_curs,:),'lineProps',{'-','color',  col_s0(n_S0_curs,:)}); hold on;
+   cnt = cnt +1;
+   %I_S_PR_FR = vertcat(I_S_PR_FR ,[repmat( ,low_I.pulse_rate'])
+end
+ %plot(low_I.pulse_rate,S0_frs(n_S0_curs,:),'k-','linewidth',2); hold on;
+  
+xlabel('Pulse Rate (pps)'); ylabel('Firing Rate (sps)');
+set(gca,'fontsize',14); box off;
 
 %% Do predictions with and with out various pulse-pulse interaction rules:
 %Figure 2 F ==============================================
@@ -141,7 +167,7 @@ figure(5);
 % For big plot:
 plot_Is = 1:length(S0_curr_range)
 n_cnt =1;
-for n_curs = plot_Is
+for n_curs = 37%plot_Is
         subplot(6,8,n_curs)
 
          I_cur = S0_curr_range(n_curs);
@@ -194,15 +220,18 @@ output.demo_pulse_mod = 0;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%% If overriding - choosing specific parameters etc:
 %Changing these settings allows for the visualizations in Figures 2 3, and Supplemental Figure 6
-pulse_rate = [100];% 250 300];
+pulse_rates = [250 60 100 160 80 200];% 250 300];
 %[70:5:120]%[90 100 110]%[125 150 175 200]; %[225 250 275 300 325];%[25:25:300]; %180;%%[50 80 120 150 200];%100 150 200 250 300 ]%0:5:350;%[0 25 50 200];
-curr_options = -4;%-9.36; 
+curr_options =  S0_curr_range([14 22 22 22 38 38])/-20%[11:14 15:22 37 38 39 40])/-20%-4;%-9.36; 
 
-[override] = set_overrides_v2(run_mode,output,{'pulse_rate',pulse_rate },{'curr_options',curr_options});
+spk_info_exemps = [];
+for n_ex = 1:length(pulse_rates)
+[override] = set_overrides_v2(run_mode,output,{'pulse_rate',pulse_rates(n_ex) },{'curr_options',curr_options(n_ex)});
 override.sim_info.inj_cur = [1 0];
 %RUN EXPERIMENTS FROM HERE ('exact') settings are in this code:
 out = run_chosen_expt(expt,run_mode,override,output);
-
+spk_info_exemps = vertcat(spk_info_exemps,[repmat([pulse_rates(n_ex) curr_options(n_ex)*-20],[length(out.spiking.end.spk_times) 1]),out.spiking.end.spk_times' ] );
+end
 %Spike times compared to Pulse times
 % p_times = out.spiking.end.pulse_time(1)+ cumsum(out.spiking.end.ISI);
 % spk_times = out.spiking.end.spk_times;
@@ -239,9 +268,12 @@ plot([1:300],.1*ones(size([1:300])),'g');
 ylim([0 1]); xlabel('Pulse Rate (pps)'); ylabel('P(P|S)')
 box off; set(gca,'fontsize',14)
 
+%slopes = [[1:300]', min(1,.02*[1:300])',min(1,.005*[1:300])',min(1,.001*[1:300])',.8*ones(size([1:300]))',.5*ones(size([1:300]))',.1*ones(size([1:300]))']
 %% All traces in different colors for visualizing P-S interactions: 
 %Using for Figure 3 C-D ==============================================
-n_S=5;
+
+all_pr_frs  = []
+for n_S= 1:7
     low_I = load(fullfile(data_dir_facil_axon,low_file_names{n_S}));
     higher_I = load(fullfile(data_dir_higher_axon,high_file_names{n_S}));
 S_curr_range = [low_I.curr_options*-20 higher_I.curr_options(9:end)*-20];
@@ -253,20 +285,26 @@ pr_range = [0:400];
 col_amp = parula(length(S_curr_range));
 
 
-for n_S_curs = 1:15%length(S_curr_range) %0:44%12:20%
+use_indices = [1:2:176];
+for n_S_curs = [37]%[12 23 44]
+    %change I exemplars[5 7 9 10 13 16 20 37 38 42 44]%1:length(S_curr_range) %0:44%12:20% 15%
      
     I_cur = S_curr_range(n_S_curs);
     S_cur = S_frs(n_S_curs,1);%mean(squeeze(higher_I.fr(n_S_curs,1,:)));%
-    prs_cur = low_I.pulse_rate;
+    prs_cur = low_I.pulse_rate(use_indices);
     [tot_pred_f] = interp_pred_f_5_5_21(I_cur,S_cur, prs_cur);%,[1 1]);
-    frs_fin = S_frs(n_S_curs,:);% - S_frs(1,:);
+    frs_fin = S_frs(n_S_curs,:) - mean(S_frs(:,1));% - S_frs(1,:);
     
+    all_pr_frs = vertcat(all_pr_frs,[repmat([I_cur,   S_cur],[size(low_I.pulse_rate(use_indices)')]),low_I.pulse_rate(use_indices)',frs_fin(use_indices)' , ...
+        S_frs_std(n_S_curs,use_indices)'/sqrt(5),tot_pred_f']);
     shadedErrorBar(low_I.pulse_rate,frs_fin ,S_frs_std(n_S_curs,:)/sqrt(5),'lineProps',{'-','color',  col_amp( n_S_curs ,:)}); hold on;
      
 end
-xlabel('Pulse Rate (pps)'); ylabel('Firing Rate (sps)');
-set(gca,'fontsize',14); colorbar;
+% xlabel('Pulse Rate (pps)'); ylabel('Firing Rate (sps)');
+% set(gca,'fontsize',14); colorbar;
+end
 
+size( all_pr_frs )
 %% Show histograms of pulsatile v. spontaneous timed APs
 %Making the histograms
 %Figure 3 B ==============================================
@@ -293,14 +331,26 @@ expt.num = [] ;%1-6 information about them in the readme. Setting [], 3, 5 and
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%% If overriding - choosing specific parameters etc:
-pulse_rates = [25:25:300];
-use_curs = 48/-20;%[72 108 144 192 276 312]/-20;
-[override] = set_overrides_v2(run_mode,output,{'pulse_rate',pulse_rates},{'curr_options',use_curs},{'tot_reps', 1},{'mu_IPT',1},{'sim_time',1150});
+pulse_rates = [25,75,150]%:25:300];
+
+p_ts = []
+spk_ts = []
+for pulse_rates =[150]%,75,150]
+
+use_curs = 144/-20;%48/-20;%[72 108 144 192 276 312]/-20;
+[override] = set_overrides_v2(run_mode,output,{'pulse_rate',pulse_rates}, ...
+    {'curr_options',use_curs},{'tot_reps', 1},{'mu_IPT',1},{'sim_time',300});%1150});
 
 %RUN EXPERIMENTS FROM HERE ('exact') settings are in this code:
-run_chosen_expt(expt,run_mode,override,output);
+out = run_chosen_expt(expt,run_mode,override,output);
 
-
+spk_ts = vertcat(p_ts,out.spiking.end.spk_times')
+o_p_t = out.spiking.end.pulse_time;
+o_p_ts = o_p_t([1 find(diff(o_p_t) > 1)+1]);
+p_ts = vertcat(p_ts,o_p_ts)%out.spiking.end.pulse_time')
+end
+p_ts'
+spk_ts
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Fig 5 simulations of various pulse parameters and neuron types
@@ -390,6 +440,8 @@ curr_options = 0;%linspace(-19.3,-20,5)
 output.vis_plot = 0;
 curr_options=0;
 n = 1;
+
+full_hist_info= []
 for pulse_rate = [100 150]
 [override] = set_overrides_v2(run_mode,output,{'pulse_rate',pulse_rate },...
     {'curr_options',curr_options},{'inj_cur',inj_cur},{'is_reg',0},...
@@ -408,8 +460,14 @@ xlabel('t (ms) from Pulse'); ylabel('Num APs')
 histogram(mod_spk_t,12)
 xlim([0 isi])
 n = n+1;
-end
 
+full_hist_info = vertcat(full_hist_info,[repmat(pulse_rate,[length(mod_spk_t) 1]),...
+    mod_spk_t']);
+end
+%%
+full_hist_info = [full_hist_info,repmat(1,[size(full_hist_info,1) 1])];
+
+%%
 %REG
 output.vis_plot = 0;
 curr_options=0;
@@ -432,6 +490,9 @@ xlabel('t (ms) from Pulse'); ylabel('Num APs')
 histogram(mod_spk_t,12)
 xlim([0 isi])
 n = n+1;
+
+full_hist_info = vertcat(full_hist_info,[repmat(pulse_rate,[length(mod_spk_t) 1]),...
+    mod_spk_t',repmat(0,[length(mod_spk_t) 1])]);
 end
 
 %% Comparison of mod of regular and irregular afferent:
@@ -683,7 +744,7 @@ high_file_names = {'pr_fr_sim_I0-360_PR0-350_MInf_S0_R5_04_10_2021_09_17.mat','p
     'pr_fr_sim_I0-360_PR0-350_M0.25_S142.3529_R5_04_09_2021_19_56.mat','pr_fr_sim_I0-360_PR0-350_M0.5_S89.4118_R5_04_09_2021_22_21.mat'};
 
 col_s0 = winter(7);
-for n_S = 5%1:3
+for n_S = 4%5%1:3
     low_I = load(fullfile(data_dir_facil_axon,low_file_names{n_S}));
     higher_I = load(fullfile(data_dir_higher_axon,high_file_names{n_S}));
 S_curr_range = [low_I.curr_options*-20 higher_I.curr_options(9:end)*-20];
@@ -694,7 +755,7 @@ pr_range = [0:400];
 
 cnt = 1;
 leg_nums ={};
-for n_S_curs = 25 %10:5:44%:44%12:20%length(S_curr_range)
+for n_S_curs = 35 %10:5:44%:44%12:20%length(S_curr_range)
     %subplot(3,6,n_S_curs);
       S_cur = S_frs(n_S_curs,1)
     I_cur = S_curr_range(n_S_curs);
@@ -773,7 +834,7 @@ run_chosen_expt(expt,run_mode,override,output);
 
 %PRM
 pulse_rate = linspace(100,200,n_steps);
-curr_options = 150/-20;%150 uA baseline/ fixed point for PRM/PAM
+curr_options = 180/-20;%150 uA baseline/ fixed point for PRM/PAM
 [override] = set_overrides_v2(run_mode,output,{'pulse_rate',pulse_rate },...
     {'curr_options',curr_options},{'mu_IPT',1.5},{'inj_cur',inj_cur},{'is_reg',0},{'do_jitter',0},...
     {'tot_reps',10},{'sim_start_time',150},{'epsc_scale',1},{'sim_time',1150});
@@ -1007,6 +1068,8 @@ for n_cur = 3:3:length(dat.curr_options)
    title(sprintf('I = %s',num2str(-20*dat.curr_options(n_cur))));
       plot_cnt =plot_cnt +1;
 end
+
+
 %% Pulse rate modulation as in https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6948863/#sd
 % v ;%velocity waveform
 % v_max=  400; %0/sec
